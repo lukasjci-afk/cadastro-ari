@@ -1303,15 +1303,60 @@ function renderReview(){
     <div class="rev-card"><h3>Documentos &amp; fotos</h3><div class="rev-grid">${cells}</div></div>
     <div class="rev-card"><h3>Referências</h3>${refLines}</div>`;
 }
+/* PDF único com tudo (resumo + documentos + fotos) — 1 arquivo = anexa sem falhar no WhatsApp */
+function buildCombinedPDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF) return null;
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'pt',format:'a4',compress:true});
+  const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+  let first=true;
+  function page(){ if(!first) pdf.addPage(); first=false; }
+  function imgPage(dataUrl,title){
+    if(!dataUrl) return;
+    page();
+    pdf.setFontSize(12); pdf.setTextColor(30); pdf.text(title||'', 30, 34);
+    try{
+      const p=pdf.getImageProperties(dataUrl);
+      const maxW=pw-60, maxH=ph-70;
+      let r=Math.min(maxW/p.width, maxH/p.height), w=p.width*r, h=p.height*r;
+      pdf.addImage(dataUrl,'JPEG',(pw-w)/2, 48, w, h);
+    }catch(e){}
+  }
+  // capa/resumo
+  pdf.setFontSize(16); pdf.setTextColor(20); pdf.text('CADASTRO — TRANSPORTES ARI', 30, 44);
+  pdf.setFontSize(11); pdf.setTextColor(40);
+  pdf.text(pdf.splitTextToSize(summaryText().replace(/^CADASTRO.*\n\n/,''), pw-60), 30, 74);
+  first=false;
+  // documentos
+  state.steps.forEach(st=>{
+    if(st.kind!=='doc') return;
+    if(st.sameAntt&&state.sameAntt[st.key]) return;
+    const f=(state.files[st.key]||[])[0]; if(!f) return;
+    imgPage(f.kind==='image'?f.url:f.thumb, st.title);
+  });
+  const bf=(state.files['banco']||[])[0]; if(bf) imgPage(bf.kind==='image'?bf.url:bf.thumb, 'Dados bancários');
+  ['frente','lateral'].forEach(k=>{ if(state.photos[k]) imgPage(state.photos[k].url, 'Veículo — '+k); });
+  return pdf.output('blob');
+}
+function shareItems(){
+  const base=`${slug(state.ident.nome)}_${(state.ident.cpf||'').replace(/\D/g,'')}_${mainPlate()}`;
+  const combined=buildCombinedPDF();
+  if(!combined) return deliverables();               // sem jsPDF → arquivos separados
+  const out=[{name:`${base}_CADASTRO.pdf`, blob:combined}];
+  // PDFs enviados por upload (não viram imagem) vão junto
+  Object.keys(state.files).forEach(key=>{ const f=(state.files[key]||[])[0]; if(f && f.kind==='pdf' && !f.thumb) out.push({name:`${base}_${docLabel(key)}.pdf`, blob:f.blob}); });
+  return out;
+}
 async function shareWhatsApp(){
-  const items=deliverables();
+  let items;
+  try{ items=shareItems(); }catch(e){ items=deliverables(); }
   const files=items.map(i=>new File([i.blob],i.name,{type:i.blob.type||'application/octet-stream'}));
-  // sem 'text' — assim o WhatsApp NÃO descarta os arquivos (o resumo vai como RESUMO.txt)
+  const short='Cadastro — '+(state.ident.nome||'Transportes ARI')+(state.ident.placa||state.ident.placa_cavalo?' • '+(state.ident.placa||state.ident.placa_cavalo):'');
   if(navigator.canShare && navigator.canShare({files})){
-    try{ await navigator.share({files, title:'Cadastro — '+(state.ident.nome||'Transportes ARI')}); return; }
+    try{ await navigator.share({files, text:short, title:'Cadastro ARI'}); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  alert('Não foi possível compartilhar os arquivos direto aqui. Vou baixar os '+items.length+' arquivos para você anexar no WhatsApp.');
+  alert('Não foi possível compartilhar direto aqui. Vou baixar os arquivos para você anexar no WhatsApp.');
   downloadAll();
 }
 function downloadAll(){

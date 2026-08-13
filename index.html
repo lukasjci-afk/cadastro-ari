@@ -60,7 +60,8 @@
   .frame i:nth-child(3){bottom:18px;left:18px;border-right:0;border-top:0}
   .frame i:nth-child(4){bottom:18px;right:18px;border-left:0;border-top:0}
   #cover .brand{font-size:20px;margin-bottom:26px}
-  #cover .illus{width:min(78vw,320px);margin:8px 0 22px}
+  #cover .illus{width:min(82vw,360px);margin:6px 0 20px}
+  #coverArt svg{width:100%;height:auto;display:block}
   #cover h1{font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:700;font-size:clamp(44px,15vw,72px);margin:0;line-height:.95}
   #cover h1 span{color:var(--strap)}
   #cover .sub{color:var(--slate);margin-top:14px;font-size:15px;max-width:300px}
@@ -259,16 +260,7 @@
 <section class="screen on" id="cover" onclick="go('vehicle')">
   <div class="frame"><i></i><i></i><i></i><i></i></div>
   <div class="brand">TRANSPORTES <span>ARI</span></div>
-  <svg class="illus" viewBox="0 0 320 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <line x1="20" y1="118" x2="300" y2="118" stroke="#262E39" stroke-width="2"/>
-    <rect x="120" y="40" width="150" height="58" rx="4" class="sil"/>
-    <path class="sil cab" d="M60 98 V70 q0-8 8-8 h30 l16 -22 h6 v58 z"/>
-    <rect x="95" y="52" width="22" height="16" rx="2" fill="#0E1116" stroke="#7FB2E0" stroke-width="2"/>
-    <circle cx="86" cy="104" r="13" class="wheel"/><circle cx="150" cy="104" r="13" class="wheel"/>
-    <circle cx="230" cy="104" r="13" class="wheel"/><circle cx="264" cy="104" r="13" class="wheel"/>
-    <circle cx="195" cy="26" r="6" fill="#C8F031"/>
-    <path d="M195 8 v10 M195 34 v10 M177 26 h10 M203 26 h10" stroke="#C8F031" stroke-width="2" stroke-linecap="round"/>
-  </svg>
+  <div class="illus" id="coverArt" aria-hidden="true"></div>
   <h1>CA<span>DAS</span>TRO</h1>
   <div class="sub">Motorista &amp; veículo — envie os documentos direto do celular.</div>
   <div class="tap-cta">Começar
@@ -396,31 +388,58 @@
    MODELO DE VEÍCULOS + REGRAS
    ====================================================================== */
 const VEHICLES = [
-  {id:'34',        nome:'3/4',             eixos:2, cat:'LEVES',   crlv:'simples',  sil:'rigid'},
-  {id:'fiorino',   nome:'Fiorino',         eixos:2, cat:'LEVES',   crlv:'simples',  sil:'van'},
-  {id:'toco',      nome:'Toco',            eixos:2, cat:'LEVES',   crlv:'simples',  sil:'rigid'},
-  {id:'vlc',       nome:'VLC',             eixos:2, cat:'LEVES',   crlv:'simples',  sil:'rigid'},
-  {id:'truck',     nome:'Truck',           eixos:3, cat:'MÉDIOS',  crlv:'simples',  sil:'rigid3'},
-  {id:'bitruck',   nome:'Bitruck',         eixos:4, cat:'MÉDIOS',  crlv:'simples',  sil:'rigid4'},
-  {id:'carreta',   nome:'Carreta',         eixos:5, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
-  {id:'carreta4',  nome:'Carreta 4º eixo', eixos:7, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
-  {id:'carretals', nome:'Carreta LS',      eixos:6, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
-  {id:'vanderleia',nome:'Vanderléia',      eixos:6, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
-  {id:'bitrem',    nome:'Bitrem 7 eixos',  eixos:7, cat:'PESADOS', crlv:'conjunto', carretas:2, sil:'artic2'},
-  {id:'rodotrem',  nome:'Rodotrem',        eixos:9, cat:'PESADOS', crlv:'conjunto', carretas:2, sil:'artic2'},
+  {id:'34',        nome:'3/4',             eixos:2, cat:'LEVES',   crlv:'simples',  art:{w:250,cab:18,bodies:[{x:72,w:150}],wheels:[42,190]}},
+  {id:'fiorino',   nome:'Fiorino',         eixos:2, cat:'LEVES',   crlv:'simples',  van:true},
+  {id:'toco',      nome:'Toco',            eixos:2, cat:'LEVES',   crlv:'simples',  art:{w:275,cab:18,bodies:[{x:72,w:182,y:26,h:66}],wheels:[42,216],r:14}},
+  {id:'vlc',       nome:'VLC',             eixos:2, cat:'LEVES',   crlv:'simples',  art:{w:240,cab:18,bodies:[{x:72,w:120}],wheels:[42,168]}},
+  {id:'truck',     nome:'Truck',           eixos:3, cat:'MÉDIOS',  crlv:'simples',  art:{w:255,cab:18,bodies:[{x:72,w:164}],wheels:[42,182,210]}},
+  {id:'bitruck',   nome:'Bitruck',         eixos:4, cat:'MÉDIOS',  crlv:'simples',  art:{w:292,cab:18,bodies:[{x:80,w:196}],wheels:[42,66,214,238],r:12.5}},
+  {id:'carreta',   nome:'Carreta',         eixos:5, cat:'PESADOS', crlv:'conjunto', carretas:1, art:{w:360,cab:18,chassis:[70,268],bodies:[{x:96,w:242,y:28,sider:true}],wheels:[42,108,270,296,322]}},
+  {id:'carreta4',  nome:'Carreta 4º eixo', eixos:7, cat:'PESADOS', crlv:'conjunto', carretas:1, art:{w:406,cab:18,chassis:[70,318],bodies:[{x:96,w:290,y:28,sider:true}],wheels:[42,110,136,252,304,328,352],r:12}},
+  {id:'carretals', nome:'Carreta LS',      eixos:6, cat:'PESADOS', crlv:'conjunto', carretas:1, art:{w:374,cab:18,chassis:[70,284],bodies:[{x:96,w:256,y:28,sider:true}],wheels:[42,110,136,274,300,326],r:12.5}},
+  {id:'vanderleia',nome:'Vanderléia',      eixos:6, cat:'PESADOS', crlv:'conjunto', carretas:1, art:{w:396,cab:18,chassis:[70,300],bodies:[{x:96,w:272,y:28,sider:true}],wheels:[42,110,136,262,296,330],r:12.5}},
+  {id:'bitrem',    nome:'Bitrem 7 eixos',  eixos:7, cat:'PESADOS', crlv:'conjunto', carretas:2, art:{w:472,cab:18,chassis:[70,388],bodies:[{x:96,w:150,y:30,sider:true},{x:262,w:160,y:30,sider:true}],wheels:[42,110,134,212,236,380,404],r:12}},
+  {id:'rodotrem',  nome:'Rodotrem',        eixos:9, cat:'PESADOS', crlv:'conjunto', carretas:2, art:{w:492,cab:18,chassis:[70,412],bodies:[{x:96,w:184,y:30,sider:true},{x:300,w:180,y:30,sider:true}],wheels:[40,104,128,214,238,262,406,430,454],r:11.5}},
 ];
 
-function sil(type){
-  const w='class="wheel"', s='class="sil"', c='class="sil cab"';
-  const S = {
-    van:`<path ${c} d="M12 44 V22 q0-4 4-4 h30 v26 z"/><path ${s} d="M46 44 V18 h16 l10 12 v14 z"/><rect x="50" y="22" width="10" height="9" rx="1" fill="#0E1116" stroke="#7FB2E0" stroke-width="1.6"/><circle cx="30" cy="48" r="8" ${w}/><circle cx="72" cy="48" r="8" ${w}/>`,
-    rigid:`<rect x="34" y="16" width="52" height="28" rx="2" ${s}/><path ${c} d="M8 44 V24 q0-4 4-4 h18 v24 z"/><circle cx="24" cy="48" r="8" ${w}/><circle cx="72" cy="48" r="8" ${w}/>`,
-    rigid3:`<rect x="34" y="14" width="58" height="30" rx="2" ${s}/><path ${c} d="M8 44 V22 q0-4 4-4 h18 v26 z"/><circle cx="24" cy="48" r="8" ${w}/><circle cx="66" cy="48" r="8" ${w}/><circle cx="84" cy="48" r="8" ${w}/>`,
-    rigid4:`<rect x="30" y="14" width="64" height="30" rx="2" ${s}/><path ${c} d="M6 44 V22 q0-4 4-4 h16 v26 z"/><circle cx="20" cy="48" r="7.5" ${w}/><circle cx="60" cy="48" r="7.5" ${w}/><circle cx="78" cy="48" r="7.5" ${w}/><circle cx="94" cy="48" r="7.5" ${w}/>`,
-    artic1:`<rect x="40" y="16" width="56" height="28" rx="2" ${s}/><path ${c} d="M8 44 V24 q0-4 4-4 h14 l8 -10 h3 v34 z"/><circle cx="22" cy="48" r="7.5" ${w}/><circle cx="54" cy="48" r="7.5" ${w}/><circle cx="80" cy="48" r="7.5" ${w}/><circle cx="92" cy="48" r="7.5" ${w}/>`,
-    artic2:`<rect x="34" y="18" width="30" height="26" rx="2" ${s}/><rect x="68" y="18" width="28" height="26" rx="2" ${s}/><path ${c} d="M6 44 V26 q0-4 4-4 h12 l7 -9 h2 v31 z"/><circle cx="18" cy="48" r="6.5" ${w}/><circle cx="44" cy="48" r="6.5" ${w}/><circle cx="60" cy="48" r="6.5" ${w}/><circle cx="76" cy="48" r="6.5" ${w}/><circle cx="92" cy="48" r="6.5" ${w}/>`,
-  };
-  return `<svg viewBox="0 0 104 58" xmlns="http://www.w3.org/2000/svg">${S[type]||S.rigid}</svg>`;
+/* ---------- ilustrações realistas (cabine branca + baú/carreta prata + faixa ARI) ---------- */
+function truckArt(v){ return v.van ? vanArt() : truckSVG(v.art); }
+function truckSVG(s){
+  const W=s.w, gy=94, r=s.r||13;
+  let e=`<ellipse cx="${W/2}" cy="108" rx="${W/2-8}" ry="6" fill="rgba(0,0,0,.42)"/>`;
+  if(s.chassis) e+=`<rect x="${s.chassis[0]}" y="88" width="${s.chassis[1]}" height="6" fill="#3a4048"/>`;
+  (s.bodies||[]).forEach(b=>{
+    const y=(b.y==null?30:b.y), h=(b.h==null?62:b.h), x=b.x, w=b.w;
+    e+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="#E4E9EF" stroke="#B7C2CE" stroke-width="1.5"/>`;
+    e+=`<rect x="${x}" y="${y+6}" width="${w}" height="6" fill="#F2F5F8"/>`;
+    if(b.sider){ for(let sx=x+34; sx<x+w-18; sx+=46) e+=`<line x1="${sx}" y1="${y+8}" x2="${sx}" y2="${y+h-8}" stroke="#CBD4DE" stroke-width="2"/>`; }
+    e+=`<rect x="${x}" y="${Math.round(y+h*0.46)}" width="${w}" height="7" fill="#E5342B"/>`;
+    e+=`<rect x="${x}" y="${y+h-8}" width="${w}" height="8" fill="#C4CDD8"/>`;
+  });
+  const cx=s.cab;
+  e+=`<path d="M${cx} 92 V52 Q${cx} 43 ${cx+9} 41 L${cx+33} 39 Q${cx+40} 39 ${cx+42} 45 L${cx+50} 61 V92 Z" fill="#EEF2F6" stroke="#B7C2CE" stroke-width="1.5" stroke-linejoin="round"/>`;
+  e+=`<path d="M${cx+10} 53 L${cx+32} 50 L${cx+41} 63 L${cx+10} 63 Z" fill="#8FB9DE"/>`;
+  e+=`<path d="M${cx+10} 53 L${cx+20} 51.5 L${cx+20} 63 L${cx+10} 63 Z" fill="#A9CEEC"/>`;
+  e+=`<rect x="${cx}" y="78" width="8" height="10" rx="2" fill="#FFC94D"/>`;
+  e+=`<rect x="${cx-2}" y="88" width="54" height="5" fill="#2A3138"/>`;
+  (s.wheels||[]).forEach(wx=>{
+    e+=`<circle cx="${wx}" cy="${gy}" r="${r}" fill="#14181d"/><circle cx="${wx}" cy="${gy}" r="${r*0.5}" fill="#C7D2DD"/><circle cx="${wx}" cy="${gy}" r="2.3" fill="#14181d"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} 120" xmlns="http://www.w3.org/2000/svg">${e}</svg>`;
+}
+function vanArt(){
+  const gy=94;
+  let e=`<ellipse cx="125" cy="108" rx="116" ry="6" fill="rgba(0,0,0,.42)"/>`;
+  e+=`<path d="M12 92 V72 Q12 61 24 58 L46 52 L58 42 Q61 39 67 39 L228 39 Q236 39 236 48 V92 Z" fill="#DCE1E6" stroke="#AEB8C2" stroke-width="1.5" stroke-linejoin="round"/>`;
+  e+=`<rect x="24" y="82" width="212" height="10" rx="2" fill="#C2CAD3"/>`;
+  e+=`<path d="M49 54 L59 43 L70 43 L70 56 L49 56 Z" fill="#9FB6C9"/>`;
+  e+=`<rect x="74" y="43" width="22" height="13" rx="2" fill="#A9C4DB"/>`;
+  e+=`<line x1="101" y1="42" x2="101" y2="82" stroke="#AEB8C2" stroke-width="2"/>`;
+  e+=`<rect x="106" y="64" width="10" height="3" rx="1.5" fill="#8A96A3"/>`;
+  e+=`<rect x="13" y="70" width="7" height="9" rx="2" fill="#FFC94D"/>`;
+  [60,184].forEach(wx=>{ e+=`<path d="M${wx-17} 92 A17 17 0 0 1 ${wx+17} 92 Z" fill="#0E1116"/>`; });
+  [60,184].forEach(wx=>{ e+=`<circle cx="${wx}" cy="${gy}" r="13" fill="#14181d"/><circle cx="${wx}" cy="${gy}" r="6.5" fill="#C7D2DD"/><circle cx="${wx}" cy="${gy}" r="2.3" fill="#14181d"/>`; });
+  return `<svg viewBox="0 0 250 120" xmlns="http://www.w3.org/2000/svg">${e}</svg>`;
 }
 
 function buildSteps(v){
@@ -468,7 +487,7 @@ function renderVehicles(){
   cats.forEach(cat=>{
     html += `<div class="catlabel"><span class="eyebrow">${cat}</span><span class="ln"></span></div><div class="vgrid">`;
     VEHICLES.filter(v=>v.cat===cat).forEach(v=>{
-      html += `<div class="vcard" onclick="pickVehicle('${v.id}')"><div class="art">${sil(v.sil)}</div><div class="nm">${v.nome}</div><div class="meta"><span>${v.crlv==='conjunto'?'Cavalo + carreta'+(v.carretas>1?'s':''):'CRLV único'}</span><span class="badge">${v.eixos} eixos</span></div></div>`;
+      html += `<div class="vcard" onclick="pickVehicle('${v.id}')"><div class="art">${truckArt(v)}</div><div class="nm">${v.nome}</div><div class="meta"><span>${v.crlv==='conjunto'?'Cavalo + carreta'+(v.carretas>1?'s':''):'CRLV único'}</span><span class="badge">${v.eixos} eixos</span></div></div>`;
     });
     html += `</div>`;
   });
@@ -507,7 +526,7 @@ function firstThumb(key){
 function renderFlow(){
   const v = state.vehicle;
   document.getElementById('vchosen').innerHTML =
-    `<div class="art">${sil(v.sil)}</div><div><div class="nm">${v.nome}</div><div class="meta">${v.cat} • ${v.eixos} eixos</div></div><button class="chg" onclick="go('vehicle')">trocar</button>`;
+    `<div class="art">${truckArt(v)}</div><div><div class="nm">${v.nome}</div><div class="meta">${v.cat} • ${v.eixos} eixos</div></div><button class="chg" onclick="go('vehicle')">trocar</button>`;
   let html='';
   state.steps.forEach((st,i)=>{
     const done = stepDone(st);
@@ -1257,6 +1276,7 @@ function downloadAll(){
 
 /* init */
 renderVehicles();
+document.getElementById('coverArt').innerHTML = truckArt(VEHICLES.find(v=>v.id==='carreta'));
 </script>
 </body>
 </html>

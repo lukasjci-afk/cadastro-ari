@@ -29,6 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --void:#0E1116;
@@ -1302,6 +1303,7 @@ function renderReview(){
     <div class="rev-card"><h3>Dados bancários</h3>${bankLines}</div>
     <div class="rev-card"><h3>Documentos &amp; fotos</h3><div class="rev-grid">${cells}</div></div>
     <div class="rev-card"><h3>Referências</h3>${refLines}</div>`;
+  prepareShare();
 }
 /* PDF único com tudo (resumo + documentos + fotos) — 1 arquivo = anexa sem falhar no WhatsApp */
 function buildCombinedPDF(){
@@ -1338,25 +1340,31 @@ function buildCombinedPDF(){
   ['frente','lateral'].forEach(k=>{ if(state.photos[k]) imgPage(state.photos[k].url, 'Veículo — '+k); });
   return pdf.output('blob');
 }
-function shareItems(){
-  const base=`${slug(state.ident.nome)}_${(state.ident.cpf||'').replace(/\D/g,'')}_${mainPlate()}`;
-  const combined=buildCombinedPDF();
-  if(!combined) return deliverables();               // sem jsPDF → arquivos separados
-  const out=[{name:`${base}_CADASTRO.pdf`, blob:combined}];
-  // PDFs enviados por upload (não viram imagem) vão junto
-  Object.keys(state.files).forEach(key=>{ const f=(state.files[key]||[])[0]; if(f && f.kind==='pdf' && !f.thumb) out.push({name:`${base}_${docLabel(key)}.pdf`, blob:f.blob}); });
-  return out;
+function zipBaseName(){ return `${slug(state.ident.nome)}_${(state.ident.cpf||'').replace(/\D/g,'')}_${mainPlate()}`; }
+/* monta um .zip com os arquivos SEPARADOS (cada documento/foto individual, com nome próprio) */
+async function buildZipFile(){
+  if(!window.JSZip) return null;
+  const zip=new JSZip();
+  deliverables().forEach(it=> zip.file(it.name, it.blob));
+  const blob=await zip.generateAsync({type:'blob'});
+  return new File([blob], zipBaseName()+'_CADASTRO.zip', {type:'application/zip'});
 }
+/* pré-gera o pacote ao abrir a Revisão, para o compartilhamento ser instantâneo (mantém o gesto de toque) */
+let shareReady=null;
+function prepareShare(){ shareReady=null; buildZipFile().then(f=>{ shareReady=f; }).catch(()=>{}); }
+
 async function shareWhatsApp(){
-  let items;
-  try{ items=shareItems(); }catch(e){ items=deliverables(); }
-  const files=items.map(i=>new File([i.blob],i.name,{type:i.blob.type||'application/octet-stream'}));
+  let file=shareReady;
+  if(!file){ try{ file=await buildZipFile(); }catch(e){} }
+  if(!file){ // sem JSZip → cai para 1 PDF único (ainda funciona)
+    const pdf=buildCombinedPDF(); if(pdf) file=new File([pdf], zipBaseName()+'_CADASTRO.pdf', {type:'application/pdf'});
+  }
   const short='Cadastro — '+(state.ident.nome||'Transportes ARI')+(state.ident.placa||state.ident.placa_cavalo?' • '+(state.ident.placa||state.ident.placa_cavalo):'');
-  if(navigator.canShare && navigator.canShare({files})){
-    try{ await navigator.share({files, text:short, title:'Cadastro ARI'}); return; }
+  if(file && navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], text:short, title:'Cadastro ARI'}); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  alert('Não foi possível compartilhar direto aqui. Vou baixar os arquivos para você anexar no WhatsApp.');
+  alert('Não foi possível compartilhar direto aqui. Vou baixar os arquivos separados para você anexar no WhatsApp.');
   downloadAll();
 }
 function downloadAll(){

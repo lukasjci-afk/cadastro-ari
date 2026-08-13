@@ -949,7 +949,7 @@ function enhanceJS(canvas){
   const c=document.createElement('canvas'); c.width=canvas.width; c.height=canvas.height;
   const ctx=c.getContext('2d'); ctx.drawImage(canvas,0,0);
   const im=ctx.getImageData(0,0,c.width,c.height), d=im.data;
-  const contrast=1.4, bright=-26;
+  const contrast=1.17, bright=-8;
   for(let i=0;i<d.length;i+=4){
     for(let j=0;j<3;j++){ let v=(d[i+j]-128)*contrast+128+bright; d[i+j]=v<0?0:v>255?255:v; }
   }
@@ -974,36 +974,28 @@ function warpToCanvas(img,quad){
   return out;
 }
 
-/* ---------- realce estilo scanner ---------- */
+/* ---------- realce MODERADO (clareza + contraste leve + nitidez) — sem estourar o papel ---------- */
 function enhanceCV(img,mode){
   const src=cv.imread(img);
-  const gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
-  // estima iluminação do papel (close numa escala reduzida) e divide
-  const bg=new cv.Mat();
-  const k=cv.getStructuringElement(cv.MORPH_ELLIPSE,new cv.Size(17,17));
-  cv.morphologyEx(gray,bg,cv.MORPH_CLOSE,k);
-  cv.GaussianBlur(bg,bg,new cv.Size(0,0),9);
-  const norm=new cv.Mat();
-  cv.divide(gray,bg,norm,255.0);
-  // auto-níveis por percentis (mais contraste)
-  const {lo,hi}=percentiles(norm,8,90);
-  const lev=new cv.Mat();
-  const a=255/Math.max(1,(hi-lo));
-  norm.convertTo(lev,cv.CV_8U,a,-lo*a);
-  let outMat;
-  if(mode==='pb'){ outMat=lev; }
-  else {
-    // Cor: reforça a tinta usando o canal de luminância nivelado sobre o colorido
-    const rgb=new cv.Mat(); cv.cvtColor(src,rgb,cv.COLOR_RGBA2RGB);
-    const levC=new cv.Mat(); cv.cvtColor(lev,levC,cv.COLOR_GRAY2RGB);
-    outMat=new cv.Mat(); cv.addWeighted(rgb,0.32,levC,0.68,0,outMat);
-    rgb.delete(); levC.delete(); lev.delete();
-  }
-  // máscara de nitidez (unsharp mais forte)
-  const blur=new cv.Mat(); cv.blur(outMat,blur,new cv.Size(3,3));
-  const sharp=new cv.Mat(); cv.addWeighted(outMat,1.85,blur,-0.85,0,sharp);
-  const out=document.createElement('canvas'); cv.imshow(out,sharp);
-  src.delete();gray.delete();bg.delete();k.delete();norm.delete();outMat.delete();blur.delete();sharp.delete();
+  const work=new cv.Mat(); cv.cvtColor(src,work,cv.COLOR_RGBA2RGB); src.delete();
+  // 1) Estrutura/clareza: CLAHE no canal L (contraste local, não estoura) ~ "+33"
+  try{
+    const lab=new cv.Mat(); cv.cvtColor(work,lab,cv.COLOR_RGB2Lab);
+    const chs=new cv.MatVector(); cv.split(lab,chs);
+    const L=chs.get(0);
+    const clahe=new cv.CLAHE(2.2,new cv.Size(8,8)); clahe.apply(L,L); chs.set(0,L);
+    cv.merge(chs,lab); cv.cvtColor(lab,work,cv.COLOR_Lab2RGB);
+    lab.delete(); chs.delete(); L.delete(); clahe.delete();
+  }catch(e){ /* build sem CLAHE — segue sem a clareza local */ }
+  // 2) Contraste global leve (~+17%), mantendo o meio-tom
+  work.convertTo(work,-1,1.17,-22);
+  // 3) Nitidez moderada (~+51) via unsharp mask
+  const blur=new cv.Mat(); cv.GaussianBlur(work,blur,new cv.Size(0,0),1.2);
+  const sharp=new cv.Mat(); cv.addWeighted(work,1.55,blur,-0.55,0,sharp);
+  work.delete(); blur.delete();
+  let outMat=sharp;
+  if(mode==='pb'){ const g=new cv.Mat(); cv.cvtColor(sharp,g,cv.COLOR_RGB2GRAY); sharp.delete(); outMat=g; }
+  const out=document.createElement('canvas'); cv.imshow(out,outMat); outMat.delete();
   return out;
 }
 function percentiles(mat,pLo,pHi){
@@ -1191,14 +1183,19 @@ function stampLines(d){
 }
 function renderGpsStamp(){ gpsStampEl.innerHTML=stampLines().map(l=>typeof l==='string'?`<div>${esc(l)}</div>`:`<div class="ref">${esc(l.text)}</div>`).join(''); }
 function drawStamp(ctx,W,H,lines){
-  const size=Math.max(15,Math.round(W*0.030)), lh=Math.round(size*1.26);
+  const size=Math.max(9,Math.round(W*0.015)), lh=Math.round(size*1.30);   // fonte pela metade
   const padX=Math.round(W*0.018), padY=Math.round(H*0.022);
   ctx.textBaseline='alphabetic'; ctx.font=`700 ${size}px Inter, Arial, sans-serif`; ctx.textAlign='right';
   const x=W-padX, first=H-padY-lh*(lines.length-1);
-  let w=0; lines.forEach(l=>{ w=Math.max(w,ctx.measureText(typeof l==='string'?l:l.text).width); });
-  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(x-w-size*0.5,first-lh,w+size,lh*lines.length+size*0.5);
-  ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=Math.round(size*0.35); ctx.shadowOffsetY=Math.round(size*0.09);
-  lines.forEach((l,i)=>{ ctx.fillStyle=(typeof l==='object'&&l.accent)?'#C8F031':'#FFFFFF'; ctx.fillText(typeof l==='string'?l:l.text,x,first+i*lh); });
+  // fundo TRANSPARENTE — contorno escuro + sombra para manter legível
+  ctx.lineJoin='round'; ctx.lineWidth=Math.max(1.2,size*0.16); ctx.strokeStyle='rgba(0,0,0,.9)';
+  ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=Math.round(size*0.5); ctx.shadowOffsetY=1;
+  lines.forEach((l,i)=>{
+    const t=typeof l==='string'?l:l.text, y=first+i*lh;
+    ctx.strokeText(t,x,y);
+    ctx.fillStyle=(typeof l==='object'&&l.accent)?'#C8F031':'#FFFFFF';
+    ctx.fillText(t,x,y);
+  });
   ctx.shadowColor='transparent';
 }
 async function captureGpsPhoto(){

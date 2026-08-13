@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0E1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Cadastro — Transportes ARI</title>
+
+<!-- ============ Open Graph (cartão do WhatsApp) ============ -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Cadastro — Transportes ARI">
+<meta property="og:description" content="Envie os documentos do motorista e do veículo. Rápido, direto do celular.">
+<meta property="og:image" content="capa.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0E1116;
+    --steel:#171C24;
+    --steel2:#1E2530;
+    --line:#262E39;
+    --strap:#FF6B1A;
+    --hiviz:#C8F031;
+    --wa:#25D366;
+    --mist:#E8ECF1;
+    --slate:#8894A2;
+    --alert:#FF4D4D;
+    --pad:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--void);color:var(--mist);
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    overscroll-behavior:none;
+  }
+  .eyebrow{font-family:"Barlow Condensed",Arial Narrow,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-weight:600;font-size:12px;color:var(--slate)}
+  .brand{font-family:"Barlow Condensed",Arial Narrow,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-size:17px;line-height:1}
+  .brand span{color:var(--strap)}
+
+  /* ---------- telas ---------- */
+  .screen{display:none;min-height:100dvh;flex-direction:column}
+  .screen.on{display:flex}
+
+  /* ---------- CAPA ---------- */
+  #cover{
+    align-items:center;justify-content:center;text-align:center;
+    padding:calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px);
+    background:radial-gradient(120% 80% at 50% 0%, rgba(255,107,26,.10), transparent 60%),radial-gradient(90% 60% at 50% 100%, rgba(200,240,49,.06), transparent 60%),var(--void);
+    cursor:pointer;position:relative;overflow:hidden;
+  }
+  .frame i{position:absolute;width:34px;height:34px;border:2px solid var(--line)}
+  .frame i:nth-child(1){top:18px;left:18px;border-right:0;border-bottom:0}
+  .frame i:nth-child(2){top:18px;right:18px;border-left:0;border-bottom:0}
+  .frame i:nth-child(3){bottom:18px;left:18px;border-right:0;border-top:0}
+  .frame i:nth-child(4){bottom:18px;right:18px;border-left:0;border-top:0}
+  #cover .brand{font-size:20px;margin-bottom:26px}
+  #cover .illus{width:min(78vw,320px);margin:8px 0 22px}
+  #cover h1{font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:700;font-size:clamp(44px,15vw,72px);margin:0;line-height:.95}
+  #cover h1 span{color:var(--strap)}
+  #cover .sub{color:var(--slate);margin-top:14px;font-size:15px;max-width:300px}
+  .tap-cta{margin-top:30px;display:inline-flex;align-items:center;gap:10px;background:var(--strap);color:#1a0d04;font-weight:700;padding:14px 26px;border-radius:14px;font-size:16px;box-shadow:0 10px 30px rgba(255,107,26,.28)}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  .tap-cta{animation:pulse 2.2s ease-in-out infinite}
+
+  /* ---------- barra superior ---------- */
+  header.bar{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 12px) var(--pad) 12px;background:linear-gradient(180deg,rgba(14,17,22,.98),rgba(14,17,22,.86));position:sticky;top:0;z-index:5;border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+  .backbtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--steel);color:var(--mist);display:flex;align-items:center;justify-content:center;flex:none}
+  .backbtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  header.bar .ttl{font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.09em;font-weight:600;font-size:17px}
+  header.bar .sub{font-size:11px;color:var(--slate);margin-top:2px}
+
+  .content{flex:1;overflow:auto;padding:var(--pad);padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
+
+  /* ---------- seleção de veículo ---------- */
+  .catlabel{margin:18px 4px 10px;display:flex;align-items:center;gap:10px}
+  .catlabel:first-child{margin-top:4px}
+  .catlabel .eyebrow{white-space:nowrap}
+  .catlabel .ln{height:1px;background:var(--line);flex:1}
+  .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .vcard{background:linear-gradient(180deg,var(--steel2),var(--steel));border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:.15s}
+  .vcard:active{transform:scale(.97);border-color:var(--strap)}
+  .vcard .art{height:58px;display:flex;align-items:flex-end;justify-content:center}
+  .vcard .art svg{width:100%;height:100%}
+  .vcard .nm{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:16px;letter-spacing:.03em}
+  .vcard .meta{font-size:11px;color:var(--slate);display:flex;justify-content:space-between;align-items:center}
+  .badge{background:rgba(200,240,49,.12);color:var(--hiviz);border:1px solid rgba(200,240,49,.25);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:600}
+  .sil{fill:#3A6591;stroke:#7FB2E0;stroke-width:2;stroke-linejoin:round}
+  .sil .cab{fill:#2C4E70}
+  .wheel{fill:#0E1116;stroke:#7FB2E0;stroke-width:2}
+
+  /* ---------- checklist ---------- */
+  .progress{margin:2px 0 16px}
+  .progress .track{height:8px;border-radius:999px;background:var(--steel);overflow:hidden;border:1px solid var(--line)}
+  .progress .fill{height:100%;background:linear-gradient(90deg,var(--strap),var(--hiviz));width:0;transition:width .3s}
+  .progress .lbl{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--slate)}
+  .progress .lbl b{color:var(--mist);font-weight:600}
+  .vchosen{display:flex;align-items:center;gap:12px;background:var(--steel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:16px}
+  .vchosen .art{width:56px;height:36px;flex:none}
+  .vchosen .art svg{width:100%;height:100%}
+  .vchosen .nm{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:16px}
+  .vchosen .meta{font-size:11px;color:var(--slate)}
+  .vchosen .chg{margin-left:auto;font-size:12px;color:var(--strap);background:none;border:0;font-weight:600}
+
+  .step{display:flex;align-items:center;gap:13px;background:var(--steel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s}
+  .step:active{transform:scale(.99)}
+  .step.done{border-color:rgba(200,240,49,.35)}
+  .step .ic{width:34px;height:34px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:var(--steel2);border:1px solid var(--line);overflow:hidden}
+  .step.done .ic{background:var(--hiviz);border-color:var(--hiviz)}
+  .step .ic svg{width:18px;height:18px;stroke:var(--slate);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .step.done .ic svg{stroke:#0E1116}
+  .step .ic img{width:100%;height:100%;object-fit:cover}
+  .step .tx{flex:1;min-width:0}
+  .step .tx .t{font-weight:600;font-size:15px}
+  .step .tx .d{font-size:12px;color:var(--slate);margin-top:2px}
+  .step.opt .tx .t::after{content:"opcional";margin-left:8px;font-size:10px;color:var(--slate);font-weight:500;background:var(--steel2);border:1px solid var(--line);border-radius:999px;padding:1px 7px;vertical-align:middle}
+  .step .go{color:var(--slate)}
+  .step .go svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .step.done .go{color:var(--hiviz)}
+
+  .footbar{position:sticky;bottom:0;padding:12px var(--pad) calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(0deg,var(--void) 70%,rgba(14,17,22,0))}
+  .btn{width:100%;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--steel);color:var(--mist);font-size:16px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px}
+  .btn.primary{background:var(--strap);border-color:var(--strap);color:#1a0d04}
+  .btn.ghost{background:var(--steel);color:var(--mist)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn .hint{font-weight:500;font-size:12px;opacity:.85}
+
+  /* ---------- captura de documento (Etapa 2) ---------- */
+  .cap-head{margin-bottom:4px}
+  .cap-head .big{font-family:"Barlow Condensed",sans-serif;font-size:22px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px}
+  .cap-head p{color:var(--slate);font-size:13px;margin:0}
+  .note{background:rgba(255,107,26,.08);border:1px solid rgba(255,107,26,.25);border-radius:12px;padding:11px 13px;font-size:13px;color:var(--mist);margin:14px 0}
+  .note b{color:var(--strap)}
+  .cap-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}
+  .cap-btn{background:var(--steel);border:1px solid var(--line);border-radius:16px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;color:var(--mist);font-weight:600;font-size:14px;transition:.15s}
+  .cap-btn:active{transform:scale(.97)}
+  .cap-btn.foto{border-color:rgba(255,107,26,.4)}
+  .cap-btn svg{width:30px;height:30px;stroke:var(--strap);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .cap-btn.up svg{stroke:var(--hiviz)}
+  .cap-btn small{color:var(--slate);font-weight:400;font-size:11px;text-align:center}
+  .files{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .filecard{display:flex;align-items:center;gap:12px;background:var(--steel);border:1px solid var(--line);border-radius:14px;padding:10px}
+  .filecard .fthumb{width:60px;height:60px;border-radius:10px;background:var(--void);border:1px solid var(--line);flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .filecard .fthumb img{width:100%;height:100%;object-fit:cover}
+  .filecard .fthumb svg{width:26px;height:26px;stroke:var(--slate);fill:none;stroke-width:1.6}
+  .filecard .fi{flex:1;min-width:0}
+  .filecard .fi .fn{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .filecard .fi .fm{font-size:11px;color:var(--hiviz);margin-top:2px}
+  .filecard .fdel{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--void);color:var(--slate);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .filecard .fdel svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+  .cbrow{display:flex;align-items:flex-start;gap:11px;background:var(--steel);border:1px solid var(--line);border-radius:14px;padding:13px;margin-top:12px;cursor:pointer}
+  .cbrow .box{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;background:var(--void)}
+  .cbrow.on .box{background:var(--hiviz);border-color:var(--hiviz)}
+  .cbrow .box svg{width:16px;height:16px;stroke:#0E1116;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+  .cbrow.on .box svg{opacity:1}
+  .cbrow .cbtx{font-size:13px}
+  .cbrow .cbtx b{display:block;margin-bottom:2px}
+  .cbrow .cbtx span{color:var(--slate)}
+
+  /* ---------- câmera scanner ---------- */
+  #camera{background:#000}
+  .cam-stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#000}
+  #camVideo{max-width:100%;max-height:100%;display:block}
+  #camOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .cam-hint{position:absolute;top:14px;left:0;right:0;text-align:center;color:var(--mist);font-size:13px;pointer-events:none}
+  .cam-hint span{background:rgba(0,0,0,.55);padding:6px 14px;border-radius:999px;border:1px solid var(--line)}
+  .cam-foot{padding:16px var(--pad) calc(env(safe-area-inset-bottom) + 18px);background:#000;display:flex;align-items:center;justify-content:center;gap:26px}
+  .shutter{width:74px;height:74px;border-radius:50%;border:4px solid var(--mist);background:var(--strap);cursor:pointer;flex:none;box-shadow:0 0 0 4px rgba(0,0,0,.4)}
+  .shutter:active{transform:scale(.94)}
+  .cam-side{width:48px;height:48px;border-radius:12px;border:1px solid #333;background:#111;color:var(--mist);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .cam-side svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- ajuste de cantos ---------- */
+  #corners{background:#000}
+  .crop-stage{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#000;touch-action:none}
+  #cropImg{max-width:100%;max-height:100%;display:block}
+  #cropSvg{position:absolute;pointer-events:none}
+  #cropSvg polygon{fill:rgba(200,240,49,.14);stroke:var(--hiviz);stroke-width:2}
+  .handle{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid var(--hiviz);background:rgba(200,240,49,.25);touch-action:none;cursor:grab}
+  .crop-foot{padding:14px var(--pad) calc(env(safe-area-inset-bottom) + 16px);background:#000;display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:10px}
+  .crop-foot .btn{padding:14px 10px;font-size:14px}
+
+  /* ---------- formulários ---------- */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;color:var(--slate);margin-bottom:6px;font-weight:500}
+  .field label .req{color:var(--strap)}
+  .field input,.field select{width:100%;background:var(--void);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--mist);font-size:15px;font-family:Inter,sans-serif}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--strap)}
+  .field .err{color:var(--alert);font-size:11px;margin-top:5px;display:none}
+  .field.bad input{border-color:var(--alert)}
+  .field.bad .err{display:block}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:flex;background:var(--void);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .seg button{flex:1;padding:12px;background:transparent;border:0;color:var(--slate);font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.06em;font-size:14px;font-weight:600;cursor:pointer}
+  .seg button.on{background:var(--strap);color:#1a0d04}
+  .divider{display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:var(--slate);font-size:12px;font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.1em}
+  .divider .ln{flex:1;height:1px;background:var(--line)}
+  .addbtn{width:100%;padding:13px;border:1px dashed var(--line);border-radius:12px;background:transparent;color:var(--hiviz);font-weight:600;cursor:pointer;margin-top:4px;font-size:14px}
+  .refrow{background:var(--steel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+  .refrow .rh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .refrow .rh b{font-size:13px;color:var(--slate);font-weight:600}
+  .refrow .rdel{background:none;border:0;color:var(--slate);font-size:12px;cursor:pointer}
+
+  /* ---------- fotos do veículo ---------- */
+  .photoslots{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .pslot{background:var(--steel);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+  .pslot.ok{border-color:rgba(200,240,49,.4)}
+  .pslot .pv{aspect-ratio:4/3;background:var(--void);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .pslot .pv img{width:100%;height:100%;object-fit:cover}
+  .pslot .pv .ph{color:var(--slate);font-size:24px}
+  .pslot .pl{padding:10px 12px;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+  .pslot .pl .st{font-size:11px;color:var(--hiviz);font-weight:500}
+  .pslot .pa{display:flex;border-top:1px solid var(--line)}
+  .pslot .pa button{flex:1;padding:11px 6px;background:transparent;border:0;border-right:1px solid var(--line);color:var(--mist);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+  .pslot .pa button:last-child{border-right:0}
+  .pslot .pa button svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .pslot .pa button.foto svg{stroke:var(--strap)} .pslot .pa button.up svg{stroke:var(--hiviz)}
+
+  /* ---------- câmera GPS ---------- */
+  #gpscam{background:#000}
+  #gpsVideo{max-width:100%;max-height:100%;display:block}
+  .gps-chip{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:7px;background:rgba(0,0,0,.6);border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:12px}
+  .gps-dot{width:9px;height:9px;border-radius:50%;background:var(--slate);flex:none}
+  .gps-dot.searching{background:var(--strap);animation:pulse 1.1s infinite}
+  .gps-dot.ok{background:var(--hiviz)} .gps-dot.bad{background:var(--alert)}
+  #gpsStamp{position:absolute;right:14px;bottom:14px;text-align:right;font-size:12px;line-height:1.5;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000;max-width:78%;pointer-events:none;font-weight:600}
+  #gpsStamp .ref{color:var(--hiviz)}
+
+  /* ---------- revisão / finalização ---------- */
+  .btn.wa{background:var(--wa);border-color:var(--wa);color:#04210f}
+  .btn svg{width:20px;height:20px}
+  .rev-card{background:var(--steel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .rev-card h3{font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.07em;font-size:14px;margin:0 0 8px;color:var(--slate)}
+  .rev-line{display:flex;justify-content:space-between;gap:12px;font-size:14px;padding:4px 0}
+  .rev-line span{color:var(--slate)} .rev-line b{font-weight:600;text-align:right}
+  .rev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .rev-doc{background:var(--void);border:1px solid var(--line);border-radius:10px;overflow:hidden;aspect-ratio:1;display:flex;flex-direction:column}
+  .rev-doc .im{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .rev-doc .im img{width:100%;height:100%;object-fit:cover}
+  .rev-doc .im svg{width:24px;height:24px;stroke:var(--hiviz);fill:none;stroke-width:1.6}
+  .rev-doc .cap{font-size:9px;padding:4px 3px;text-align:center;color:var(--slate);border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ---------- overlay de processamento ---------- */
+  #busy{position:fixed;inset:0;z-index:60;background:rgba(14,17,22,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;backdrop-filter:blur(3px)}
+  #busy.on{display:flex}
+  .spin{width:46px;height:46px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--strap);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #busy .msg{font-family:"Barlow Condensed",sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- ================= CAPA ================= -->
+<section class="screen on" id="cover" onclick="go('vehicle')">
+  <div class="frame"><i></i><i></i><i></i><i></i></div>
+  <div class="brand">TRANSPORTES <span>ARI</span></div>
+  <svg class="illus" viewBox="0 0 320 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <line x1="20" y1="118" x2="300" y2="118" stroke="#262E39" stroke-width="2"/>
+    <rect x="120" y="40" width="150" height="58" rx="4" class="sil"/>
+    <path class="sil cab" d="M60 98 V70 q0-8 8-8 h30 l16 -22 h6 v58 z"/>
+    <rect x="95" y="52" width="22" height="16" rx="2" fill="#0E1116" stroke="#7FB2E0" stroke-width="2"/>
+    <circle cx="86" cy="104" r="13" class="wheel"/><circle cx="150" cy="104" r="13" class="wheel"/>
+    <circle cx="230" cy="104" r="13" class="wheel"/><circle cx="264" cy="104" r="13" class="wheel"/>
+    <circle cx="195" cy="26" r="6" fill="#C8F031"/>
+    <path d="M195 8 v10 M195 34 v10 M177 26 h10 M203 26 h10" stroke="#C8F031" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <h1>CA<span>DAS</span>TRO</h1>
+  <div class="sub">Motorista &amp; veículo — envie os documentos direto do celular.</div>
+  <div class="tap-cta">Começar
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </div>
+</section>
+
+<!-- ================= SELEÇÃO DE VEÍCULO ================= -->
+<section class="screen" id="vehicle">
+  <header class="bar">
+    <button class="backbtn" onclick="go('cover')" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl">Tipo de veículo</div><div class="sub">Selecione o modelo para continuar</div></div>
+  </header>
+  <div class="content" id="vehicleList"></div>
+</section>
+
+<!-- ================= CHECKLIST ================= -->
+<section class="screen" id="flow">
+  <header class="bar">
+    <button class="backbtn" onclick="go('vehicle')" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl">Checklist do cadastro</div><div class="sub" id="flowSub">Conclua todas as etapas obrigatórias</div></div>
+  </header>
+  <div class="content">
+    <div class="progress">
+      <div class="track"><div class="fill" id="progFill"></div></div>
+      <div class="lbl"><span><b id="progDone">0</b> de <b id="progTotal">0</b> concluídas</span><span id="progPct">0%</span></div>
+    </div>
+    <div class="vchosen" id="vchosen"></div>
+    <div id="steps"></div>
+  </div>
+  <div class="footbar">
+    <button class="btn primary" id="finishBtn" disabled onclick="finish()"><span id="finishTxt">Finalizar cadastro</span></button>
+  </div>
+</section>
+
+<!-- ================= PAINEL DE ETAPA ================= -->
+<section class="screen" id="step">
+  <header class="bar">
+    <button class="backbtn" onclick="go('flow')" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl" id="stepTitle">Etapa</div><div class="sub" id="stepSub"></div></div>
+  </header>
+  <div class="content" id="stepBody"></div>
+  <div class="footbar" id="stepFoot"></div>
+</section>
+
+<!-- ================= CÂMERA SCANNER ================= -->
+<section class="screen" id="camera">
+  <header class="bar">
+    <button class="backbtn" onclick="closeCamera()" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl" id="camTitle">Documento</div><div class="sub">Enquadre o documento na moldura</div></div>
+  </header>
+  <div class="cam-stage">
+    <video id="camVideo" playsinline autoplay muted></video>
+    <canvas id="camOverlay"></canvas>
+    <div class="cam-hint"><span id="camHint">procurando bordas…</span></div>
+  </div>
+  <div class="cam-foot">
+    <div class="cam-side" onclick="flipCamera()" title="Trocar câmera"><svg viewBox="0 0 24 24"><path d="M3 8a5 5 0 0 1 5-5h9M3 8l3-3M3 8l3 3"/><path d="M21 16a5 5 0 0 1-5 5H7M21 16l-3 3M21 16l-3-3"/></svg></div>
+    <div class="shutter" onclick="capturePhoto()"></div>
+    <div class="cam-side" onclick="captureWholeFrame()" title="Folha inteira"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+  </div>
+</section>
+
+<!-- ================= AJUSTE DE CANTOS ================= -->
+<section class="screen" id="corners">
+  <header class="bar">
+    <button class="backbtn" onclick="retake()" aria-label="Repetir"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl">Ajuste os cantos</div><div class="sub">Arraste as bolinhas até as quinas</div></div>
+  </header>
+  <div class="crop-stage" id="cropStage">
+    <img id="cropImg" alt="">
+    <svg id="cropSvg"><polygon id="cropPoly" points=""/></svg>
+    <div class="handle" data-i="0"></div><div class="handle" data-i="1"></div>
+    <div class="handle" data-i="2"></div><div class="handle" data-i="3"></div>
+  </div>
+  <div class="crop-foot">
+    <button class="btn ghost" onclick="retake()">Repetir</button>
+    <button class="btn ghost" onclick="useWhole()">Folha inteira</button>
+    <button class="btn primary" onclick="useCropped()">Usar ✓</button>
+  </div>
+</section>
+
+<!-- ================= CÂMERA GPS (fotos do veículo) ================= -->
+<section class="screen" id="gpscam">
+  <header class="bar">
+    <button class="backbtn" onclick="closeGpsCam()" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl" id="gpsTitle">Foto</div><div class="sub">Câmera com carimbo de GPS</div></div>
+  </header>
+  <div class="cam-stage">
+    <video id="gpsVideo" playsinline autoplay muted></video>
+    <div class="gps-chip"><span class="gps-dot" id="gpsDot"></span><span id="gpsTxt">buscando sinal…</span></div>
+    <div id="gpsStamp"></div>
+  </div>
+  <div class="cam-foot">
+    <div class="cam-side" onclick="flipGpsCam()" title="Trocar câmera"><svg viewBox="0 0 24 24"><path d="M3 8a5 5 0 0 1 5-5h9M3 8l3-3M3 8l3 3"/><path d="M21 16a5 5 0 0 1-5 5H7M21 16l-3 3M21 16l-3-3"/></svg></div>
+    <div class="shutter" onclick="captureGpsPhoto()"></div>
+    <div class="cam-side" style="opacity:0;pointer-events:none"></div>
+  </div>
+</section>
+
+<!-- ================= REVISÃO / FINALIZAÇÃO ================= -->
+<section class="screen" id="review">
+  <header class="bar">
+    <button class="backbtn" onclick="go('flow')" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div><div class="ttl">Revisão do cadastro</div><div class="sub" id="revSub"></div></div>
+  </header>
+  <div class="content" id="reviewBody"></div>
+  <div class="footbar">
+    <button class="btn wa" style="margin-bottom:10px" onclick="shareWhatsApp()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.5-.2-.7.2-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6 0-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.6 2 .8 2.7.9 3.7.8.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
+      Enviar por WhatsApp
+    </button>
+    <button class="btn ghost" onclick="downloadAll()">Baixar todos os arquivos</button>
+  </div>
+</section>
+
+<div id="busy"><div class="spin"></div><div class="msg" id="busyMsg">Processando…</div></div>
+
+<!-- inputs ocultos -->
+<input type="file" id="fileInput" accept="image/*,application/pdf" style="display:none">
+<input type="file" id="photoInput" accept="image/*" style="display:none">
+
+<script>
+/* ======================================================================
+   MODELO DE VEÍCULOS + REGRAS
+   ====================================================================== */
+const VEHICLES = [
+  {id:'34',        nome:'3/4',             eixos:2, cat:'LEVES',   crlv:'simples',  sil:'rigid'},
+  {id:'fiorino',   nome:'Fiorino',         eixos:2, cat:'LEVES',   crlv:'simples',  sil:'van'},
+  {id:'toco',      nome:'Toco',            eixos:2, cat:'LEVES',   crlv:'simples',  sil:'rigid'},
+  {id:'vlc',       nome:'VLC',             eixos:2, cat:'LEVES',   crlv:'simples',  sil:'rigid'},
+  {id:'truck',     nome:'Truck',           eixos:3, cat:'MÉDIOS',  crlv:'simples',  sil:'rigid3'},
+  {id:'bitruck',   nome:'Bitruck',         eixos:4, cat:'MÉDIOS',  crlv:'simples',  sil:'rigid4'},
+  {id:'carreta',   nome:'Carreta',         eixos:5, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
+  {id:'carreta4',  nome:'Carreta 4º eixo', eixos:7, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
+  {id:'carretals', nome:'Carreta LS',      eixos:6, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
+  {id:'vanderleia',nome:'Vanderléia',      eixos:6, cat:'PESADOS', crlv:'conjunto', carretas:1, sil:'artic1'},
+  {id:'bitrem',    nome:'Bitrem 7 eixos',  eixos:7, cat:'PESADOS', crlv:'conjunto', carretas:2, sil:'artic2'},
+  {id:'rodotrem',  nome:'Rodotrem',        eixos:9, cat:'PESADOS', crlv:'conjunto', carretas:2, sil:'artic2'},
+];
+
+function sil(type){
+  const w='class="wheel"', s='class="sil"', c='class="sil cab"';
+  const S = {
+    van:`<path ${c} d="M12 44 V22 q0-4 4-4 h30 v26 z"/><path ${s} d="M46 44 V18 h16 l10 12 v14 z"/><rect x="50" y="22" width="10" height="9" rx="1" fill="#0E1116" stroke="#7FB2E0" stroke-width="1.6"/><circle cx="30" cy="48" r="8" ${w}/><circle cx="72" cy="48" r="8" ${w}/>`,
+    rigid:`<rect x="34" y="16" width="52" height="28" rx="2" ${s}/><path ${c} d="M8 44 V24 q0-4 4-4 h18 v24 z"/><circle cx="24" cy="48" r="8" ${w}/><circle cx="72" cy="48" r="8" ${w}/>`,
+    rigid3:`<rect x="34" y="14" width="58" height="30" rx="2" ${s}/><path ${c} d="M8 44 V22 q0-4 4-4 h18 v26 z"/><circle cx="24" cy="48" r="8" ${w}/><circle cx="66" cy="48" r="8" ${w}/><circle cx="84" cy="48" r="8" ${w}/>`,
+    rigid4:`<rect x="30" y="14" width="64" height="30" rx="2" ${s}/><path ${c} d="M6 44 V22 q0-4 4-4 h16 v26 z"/><circle cx="20" cy="48" r="7.5" ${w}/><circle cx="60" cy="48" r="7.5" ${w}/><circle cx="78" cy="48" r="7.5" ${w}/><circle cx="94" cy="48" r="7.5" ${w}/>`,
+    artic1:`<rect x="40" y="16" width="56" height="28" rx="2" ${s}/><path ${c} d="M8 44 V24 q0-4 4-4 h14 l8 -10 h3 v34 z"/><circle cx="22" cy="48" r="7.5" ${w}/><circle cx="54" cy="48" r="7.5" ${w}/><circle cx="80" cy="48" r="7.5" ${w}/><circle cx="92" cy="48" r="7.5" ${w}/>`,
+    artic2:`<rect x="34" y="18" width="30" height="26" rx="2" ${s}/><rect x="68" y="18" width="28" height="26" rx="2" ${s}/><path ${c} d="M6 44 V26 q0-4 4-4 h12 l7 -9 h2 v31 z"/><circle cx="18" cy="48" r="6.5" ${w}/><circle cx="44" cy="48" r="6.5" ${w}/><circle cx="60" cy="48" r="6.5" ${w}/><circle cx="76" cy="48" r="6.5" ${w}/><circle cx="92" cy="48" r="6.5" ${w}/>`,
+  };
+  return `<svg viewBox="0 0 104 58" xmlns="http://www.w3.org/2000/svg">${S[type]||S.rigid}</svg>`;
+}
+
+function buildSteps(v){
+  const steps = [];
+  steps.push({key:'ident', kind:'form', title:'Identificação', desc:'Nome, CPF e placa do veículo', req:true});
+  steps.push({key:'cnh',   kind:'doc',  title:'CNH do motorista', desc:'1 foto ou arquivo (PDF/imagem)', req:true});
+  if(v.crlv === 'simples'){
+    steps.push({key:'crlv', kind:'doc', title:'CRLV-e', desc:'1 foto ou arquivo', req:true, rule:'Veículo '+v.cat.toLowerCase()+': apenas 1 CRLV.'});
+    steps.push({key:'antt', kind:'doc', title:'ANTT (RNTRC)', desc:'1 foto ou arquivo', req:true});
+  } else {
+    steps.push({key:'crlv_cavalo', kind:'doc', title:'CRLV-e — Cavalo', desc:'Documento do cavalo mecânico', req:true, rule:'Modelo com conjunto: primeiro o cavalo, depois '+(v.carretas>1?'as carretas':'a carreta')+'.'});
+    steps.push({key:'antt_cavalo', kind:'doc', title:'ANTT — Cavalo', desc:'RNTRC do cavalo', req:true});
+    for(let i=1;i<=v.carretas;i++){
+      const suf = v.carretas>1 ? ' '+i : '';
+      steps.push({key:'crlv_carreta'+i, kind:'doc', title:'CRLV-e — Carreta'+suf, desc:'Documento da carreta'+suf, req:true});
+      steps.push({key:'antt_carreta'+i, kind:'doc', title:'ANTT — Carreta'+suf, desc:'Ou marque “mesma ANTT do cavalo”', req:true, sameAntt:true});
+    }
+  }
+  steps.push({key:'endereco', kind:'doc',    title:'Comprovante de endereço', desc:'1 foto ou arquivo', req:true});
+  steps.push({key:'banco',    kind:'bank',   title:'Dados bancários', desc:'Foto/arquivo ou digitar • PIX • ANTT ou Motorista', req:true});
+  steps.push({key:'fotos',    kind:'photos', title:'Fotos do veículo', desc:'Frente e lateral (com GPS)', req:true});
+  steps.push({key:'refs',     kind:'refs',   title:'Referências', desc:'Mínimo 3 contatos, se quiser incluir', req:false});
+  return steps;
+}
+
+/* ======================================================================
+   ESTADO + NAVEGAÇÃO
+   ====================================================================== */
+const state = { vehicle:null, steps:[], files:{}, done:{}, sameAntt:{}, current:null,
+                ident:{}, bank:{tipo:'motorista'}, photos:{}, refs:[{},{},{}] };
+
+function go(id){
+  if(id!=='camera') stopStream();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0,0);
+  const c = document.querySelector('#'+id+' .content'); if(c) c.scrollTop=0;
+}
+function busy(on,msg){ const b=document.getElementById('busy'); if(msg)document.getElementById('busyMsg').textContent=msg; b.classList.toggle('on',on); }
+
+/* ---------- grade de veículos ---------- */
+function renderVehicles(){
+  const cats = ['LEVES','MÉDIOS','PESADOS'];
+  let html = '';
+  cats.forEach(cat=>{
+    html += `<div class="catlabel"><span class="eyebrow">${cat}</span><span class="ln"></span></div><div class="vgrid">`;
+    VEHICLES.filter(v=>v.cat===cat).forEach(v=>{
+      html += `<div class="vcard" onclick="pickVehicle('${v.id}')"><div class="art">${sil(v.sil)}</div><div class="nm">${v.nome}</div><div class="meta"><span>${v.crlv==='conjunto'?'Cavalo + carreta'+(v.carretas>1?'s':''):'CRLV único'}</span><span class="badge">${v.eixos} eixos</span></div></div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('vehicleList').innerHTML = html;
+}
+
+function pickVehicle(id){
+  const v = VEHICLES.find(x=>x.id===id);
+  state.vehicle = v; state.steps = buildSteps(v);
+  state.files={}; state.done={}; state.sameAntt={};
+  state.ident={}; state.bank={tipo:'motorista'}; state.photos={}; state.refs=[{},{},{}];
+  renderFlow(); go('flow');
+}
+
+/* ---------- checklist ---------- */
+const ckIcon = `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`;
+const chevron = `<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>`;
+const dotIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>`;
+
+function stepDone(st){
+  if(st.kind==='doc'){
+    if(st.sameAntt && state.sameAntt[st.key]) return true;
+    return (state.files[st.key]||[]).length>=1;
+  }
+  if(st.kind==='form')   return identComplete();
+  if(st.kind==='bank')   return bankComplete();
+  if(st.kind==='photos') return !!(state.photos.frente && state.photos.lateral);
+  if(st.kind==='refs')   return refsComplete();
+  return !!state.done[st.key];
+}
+function firstThumb(key){
+  const f=(state.files[key]||[]).find(x=>x.kind==='image');
+  return f?f.url:null;
+}
+
+function renderFlow(){
+  const v = state.vehicle;
+  document.getElementById('vchosen').innerHTML =
+    `<div class="art">${sil(v.sil)}</div><div><div class="nm">${v.nome}</div><div class="meta">${v.cat} • ${v.eixos} eixos</div></div><button class="chg" onclick="go('vehicle')">trocar</button>`;
+  let html='';
+  state.steps.forEach((st,i)=>{
+    const done = stepDone(st);
+    const th = done ? firstThumb(st.key) : null;
+    const icInner = th ? `<img src="${th}" alt="">` : (done?ckIcon:dotIcon);
+    html += `<div class="step ${done?'done':''} ${st.req?'':'opt'}" onclick="openStep(${i})">
+      <div class="ic">${icInner}</div>
+      <div class="tx"><div class="t">${st.title}</div><div class="d">${done&&st.sameAntt&&state.sameAntt[st.key]?'Mesma ANTT do cavalo ✓':st.desc}</div></div>
+      <div class="go">${done?ckIcon:chevron}</div></div>`;
+  });
+  document.getElementById('steps').innerHTML = html;
+  updateProgress();
+}
+function updateProgress(){
+  const req = state.steps.filter(s=>s.req);
+  const doneReq = req.filter(stepDone).length;
+  const pct = req.length ? Math.round(doneReq/req.length*100) : 0;
+  document.getElementById('progFill').style.width = pct+'%';
+  document.getElementById('progDone').textContent = doneReq;
+  document.getElementById('progTotal').textContent = req.length;
+  document.getElementById('progPct').textContent = pct+'%';
+  const allDone = doneReq===req.length;
+  document.getElementById('finishBtn').disabled = !allDone;
+  document.getElementById('finishTxt').textContent = allDone ? 'Finalizar cadastro ✓' : `Faltam ${req.length-doneReq} etapa(s)`;
+}
+
+/* ======================================================================
+   PAINEL DE ETAPA
+   ====================================================================== */
+function openStep(i){
+  const st = state.steps[i];
+  state.current = st.key; state.currentStep = st;
+  document.getElementById('stepTitle').textContent = st.title;
+  document.getElementById('stepSub').textContent = state.vehicle.nome;
+  refreshStep();
+  go('step');
+}
+function refreshStep(){
+  const st=state.currentStep; if(!st) return;
+  if(st.kind==='doc')         renderCapture(st);
+  else if(st.kind==='form')   renderIdent(st);
+  else if(st.kind==='bank')   renderBank(st);
+  else if(st.kind==='photos') renderPhotos(st);
+  else if(st.kind==='refs')   renderRefs(st);
+  else                        renderStub(st);
+}
+
+function renderCapture(st){
+  const files = state.files[st.key]||[];
+  const same = st.sameAntt && state.sameAntt[st.key];
+  let html = `<div class="cap-head"><h2 class="big">${st.title}</h2><p>${st.req?'Obrigatório':'Opcional'} — envie 1 foto ou arquivo (PDF/imagem).</p></div>`;
+  if(st.rule) html += `<div class="note"><b>Regra:</b> ${st.rule}</div>`;
+
+  if(st.sameAntt){
+    html += `<div class="cbrow ${same?'on':''}" onclick="toggleSameAntt('${st.key}')">
+      <div class="box"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <div class="cbtx"><b>ANTT da carreta é a mesma do cavalo</b><span>Marque para não precisar reenviar o mesmo documento.</span></div></div>`;
+  }
+
+  if(!same){
+    html += `<div class="cap-actions">
+      <div class="cap-btn foto" onclick="startCamera('${st.key}')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Tirar foto<small>scanner com recorte automático</small></div>
+      <div class="cap-btn up" onclick="pickFile('${st.key}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Enviar arquivo<small>PDF ou imagem da galeria</small></div>
+    </div>`;
+    if(files.length){
+      html += `<p class="eyebrow" style="margin:16px 0 8px">Enviado</p><div class="files">`;
+      files.forEach((f,idx)=>{
+        const thumb = f.kind==='image' ? `<img src="${f.url}" alt="">` : `<svg viewBox="0 0 24 24" stroke="#8894A2" fill="none" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+        const enhBtn = (f.kind==='image' && !f.scanned) ? `<button class="btn ghost" style="width:auto;padding:8px 12px;font-size:12px;margin-right:6px" onclick="enhanceFile('${st.key}',${idx})">Melhorar</button>` : '';
+        html += `<div class="filecard"><div class="fthumb">${thumb}</div><div class="fi"><div class="fn">${f.name}</div><div class="fm">${f.kind==='image'?(f.scanned?'digitalizado ✓':'imagem ✓'):'PDF ✓'}</div></div>${enhBtn}<div class="fdel" onclick="removeFile('${st.key}',${idx})"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`;
+      });
+      html += `</div>`;
+    }
+  }
+  document.getElementById('stepBody').innerHTML = html;
+  document.getElementById('stepBody').className = 'content';
+  const done = stepDone(st);
+  document.getElementById('stepFoot').innerHTML =
+    `<button class="btn primary" onclick="go('flow')">${done?'Concluir etapa ✓':'Voltar ao checklist'}</button>`;
+}
+
+function renderStub(st){
+  document.getElementById('stepBody').innerHTML =
+    `<div class="cap-head"><p class="eyebrow" style="margin-bottom:6px">Em breve — próxima etapa</p><h2 class="big">${st.title}</h2><p>${st.desc}.</p></div>
+     <div class="note">Esta etapa (${st.kind==='form'?'formulário de identificação':st.kind==='bank'?'dados bancários':st.kind==='photos'?'fotos do veículo com GPS':'referências'}) entra na próxima fase. Por ora, marque como concluída para testar o fluxo.</div>`;
+  document.getElementById('stepBody').className = 'content';
+  document.getElementById('stepFoot').innerHTML =
+    `<button class="btn primary" onclick="stubComplete('${st.key}')">Marcar como concluída ✓</button>`;
+}
+function stubComplete(key){ state.done[key]=true; renderFlow(); go('flow'); }
+
+function toggleSameAntt(key){
+  state.sameAntt[key] = !state.sameAntt[key];
+  if(state.sameAntt[key]) state.files[key]=[];
+  refreshStep(); renderFlow();
+}
+
+/* ======================================================================
+   UPLOAD (PDF / imagem)
+   ====================================================================== */
+let pickTarget=null;
+function pickFile(key){ pickTarget=key; const inp=document.getElementById('fileInput'); inp.value=''; inp.click(); }
+document.getElementById('fileInput').addEventListener('change', async e=>{
+  const file = e.target.files[0]; if(!file||!pickTarget) return;
+  const key=pickTarget;
+  if(file.type==='application/pdf'){
+    const url = URL.createObjectURL(file);
+    addFile(key,{kind:'pdf', name:file.name, url, blob:file});
+  } else if(file.type.startsWith('image/')){
+    const dataUrl = await fileToDataURL(file);
+    // upload instantâneo (sem processar); realce fica sob demanda no botão "Melhorar"
+    addFile(key,{kind:'image', name:file.name.replace(/\.[^.]+$/,'')+'.jpg', url:dataUrl, scanned:false});
+  } else { alert('Envie um PDF ou uma imagem.'); return; }
+});
+function addFile(key,obj){
+  state.files[key] = [obj]; // 1 arquivo por documento (regra do projeto)
+  refreshStep(); renderFlow();
+}
+function removeFile(key,idx){ (state.files[key]||[]).splice(idx,1); refreshStep(); renderFlow(); }
+function fileToDataURL(file){ return new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(file);}); }
+
+async function enhanceFile(key,idx){
+  const f=(state.files[key]||[])[idx]; if(!f||f.kind!=='image') return;
+  busy(true,'Carregando scanner…');
+  try{
+    const ok = await loadOpenCV(12000);
+    if(!ok){ busy(false); alert('Não consegui carregar o scanner agora (sem conexão?). A imagem original foi mantida.'); return; }
+    busy(true,'Melhorando…'); await new Promise(r=>setTimeout(r,30));
+    const img = await loadImg(f.url);
+    const canvas = enhanceCV(img,'cor');
+    f.url = canvas.toDataURL('image/jpeg',0.92); f.scanned=true;
+    refreshStep(); renderFlow();
+  }catch(e){ alert('Falha ao melhorar a imagem. Original mantida.'); }
+  busy(false);
+}
+function loadImg(src){ return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;}); }
+
+/* ======================================================================
+   OpenCV loader (multi-CDN fallback)
+   ====================================================================== */
+let cvReady=false, cvPromise=null;
+const CV_CDNS=[
+  'https://docs.opencv.org/4.10.0/opencv.js',
+  'https://cdn.jsdelivr.net/npm/@techstark/opencv-js/dist/opencv.js',
+  'https://unpkg.com/@techstark/opencv-js/dist/opencv.js',
+  'https://docs.opencv.org/4.5.5/opencv.js'
+];
+function loadOpenCV(timeoutMs){
+  if(cvReady) return Promise.resolve(true);
+  if(cvPromise) return cvPromise;
+  cvPromise = new Promise(resolve=>{
+    let done=false;
+    const finish=v=>{ if(!done){done=true; cvReady=v; resolve(v);} };
+    let idx=0;
+    const tryNext=()=>{
+      if(idx>=CV_CDNS.length) return finish(false);
+      const url=CV_CDNS[idx++];
+      const sc=document.createElement('script'); sc.async=true; sc.src=url;
+      sc.onerror=()=>{ sc.remove(); tryNext(); };
+      sc.onload=async()=>{
+        try{
+          let c = window.cv;
+          if(c && typeof c.then==='function'){ c = await c; window.cv=c; }
+          if(c && c.Mat){ return finish(true); }
+          if(c){ c.onRuntimeInitialized=()=>finish(true); }
+          else tryNext();
+        }catch(e){ tryNext(); }
+      };
+      document.head.appendChild(sc);
+    };
+    tryNext();
+    if(timeoutMs) setTimeout(()=>finish(cvReady), timeoutMs);
+  });
+  return cvPromise;
+}
+
+/* ======================================================================
+   CÂMERA + DETECÇÃO DE BORDA
+   ====================================================================== */
+let stream=null, facing='environment', rafId=null, detecting=false, lastQuad=null;
+const video=document.getElementById('camVideo'), overlay=document.getElementById('camOverlay');
+
+async function startCamera(key){
+  state.current=key;
+  document.getElementById('camTitle').textContent = state.currentStep.title;
+  go('camera');
+  loadOpenCV(6000); // carrega em paralelo
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing, width:{ideal:3840}, height:{ideal:2160}}, audio:false});
+    video.srcObject=stream;
+    await video.play();
+    startDetectLoop();
+  }catch(err){
+    // sem câmera (desktop) → fallback para input de arquivo com captura
+    alert('Não consegui abrir a câmera aqui ('+err.name+'). Use “Enviar arquivo” ou tente no celular.');
+    closeCamera();
+  }
+}
+function stopStream(){ if(rafId)cancelAnimationFrame(rafId); rafId=null; detecting=false; if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null;} }
+function closeCamera(){ stopStream(); renderCapture(state.currentStep); go('step'); }
+async function flipCamera(){ facing = facing==='environment'?'user':'environment'; stopStream(); startCamera(state.current); }
+
+function startDetectLoop(){
+  detecting=true;
+  const hint=document.getElementById('camHint');
+  const loop=()=>{
+    if(!detecting) return;
+    if(video.videoWidth){
+      overlay.width=video.clientWidth; overlay.height=video.clientHeight;
+      const quad = cvReady ? detectQuad() : null;
+      lastQuad = quad;
+      drawOverlay(quad);
+      hint.textContent = quad ? 'documento detectado ✓' : (cvReady?'procurando bordas…':'aponte para o documento');
+    }
+    rafId=requestAnimationFrame(loop);
+  };
+  loop();
+}
+
+function detectQuad(){
+  // roda em frame reduzido (~360px de largura)
+  try{
+    const vw=video.videoWidth, vh=video.videoHeight;
+    const scale=360/vw, sw=Math.round(vw*scale), sh=Math.round(vh*scale);
+    const c=document.createElement('canvas'); c.width=sw; c.height=sh;
+    c.getContext('2d').drawImage(video,0,0,sw,sh);
+    const src=cv.imread(c);
+    const gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+    cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
+    const edges=new cv.Mat(); cv.Canny(gray,edges,50,140);
+    const k=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(3,3));
+    cv.morphologyEx(edges,edges,cv.MORPH_CLOSE,k);
+    const contours=new cv.MatVector(), hier=new cv.Mat();
+    cv.findContours(edges,contours,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
+    let best=null, bestScore=0; const frameArea=sw*sh;
+    for(let i=0;i<contours.size();i++){
+      const cnt=contours.get(i);
+      const area=cv.contourArea(cnt);
+      if(area<frameArea*0.12){ cnt.delete(); continue; }
+      const peri=cv.arcLength(cnt,true);
+      const approx=new cv.Mat(); cv.approxPolyDP(cnt,approx,0.02*peri,true);
+      if(approx.rows===4 && cv.isContourConvex(approx)){
+        if(area>frameArea*0.93){ approx.delete(); cnt.delete(); continue; }
+        if(area>bestScore){ bestScore=area; if(best)best.delete(); best=approx; }
+        else approx.delete();
+      } else approx.delete();
+      cnt.delete();
+    }
+    let out=null;
+    if(best){
+      const pts=[]; for(let i=0;i<4;i++) pts.push({x:best.data32S[i*2]/scale, y:best.data32S[i*2+1]/scale});
+      out=orderCorners(pts);
+      best.delete();
+    }
+    src.delete();gray.delete();edges.delete();k.delete();contours.delete();hier.delete();
+    return out; // em coords do vídeo (full-res)
+  }catch(e){ return null; }
+}
+
+function orderCorners(p){
+  const s=p.map(pt=>pt.x+pt.y), d=p.map(pt=>pt.x-pt.y);
+  return [ p[s.indexOf(Math.min(...s))], p[d.indexOf(Math.max(...d))], p[s.indexOf(Math.max(...s))], p[d.indexOf(Math.min(...d))] ]; // TL,TR,BR,BL
+}
+
+function drawOverlay(quad){
+  const ctx=overlay.getContext('2d'); ctx.clearRect(0,0,overlay.width,overlay.height);
+  if(!quad) return;
+  const sx=overlay.width/video.videoWidth, sy=overlay.height/video.videoHeight;
+  ctx.beginPath();
+  quad.forEach((pt,i)=>{ const x=pt.x*sx,y=pt.y*sy; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.closePath();
+  ctx.fillStyle='rgba(200,240,49,.14)'; ctx.fill();
+  ctx.strokeStyle='#C8F031'; ctx.lineWidth=3; ctx.stroke();
+}
+
+/* ---------- captura ---------- */
+let capCanvas=null, capQuad=null;
+function grabFullFrame(){
+  const MAX=3000, vw=video.videoWidth, vh=video.videoHeight;
+  const scale=Math.min(1, MAX/Math.max(vw,vh));
+  const c=document.createElement('canvas'); c.width=Math.round(vw*scale); c.height=Math.round(vh*scale);
+  c.getContext('2d').drawImage(video,0,0,c.width,c.height);
+  return {canvas:c, scale};
+}
+function capturePhoto(){
+  const {canvas,scale}=grabFullFrame();
+  capCanvas=canvas;
+  // quad detectado (coords full-res) → escala para o canvas capturado
+  capQuad = lastQuad ? lastQuad.map(p=>({x:p.x*scale,y:p.y*scale}))
+                     : [{x:canvas.width*.1,y:canvas.height*.1},{x:canvas.width*.9,y:canvas.height*.1},{x:canvas.width*.9,y:canvas.height*.9},{x:canvas.width*.1,y:canvas.height*.9}];
+  stopStream(); openCorners();
+}
+function captureWholeFrame(){
+  const {canvas}=grabFullFrame(); capCanvas=canvas;
+  capQuad=[{x:0,y:0},{x:canvas.width,y:0},{x:canvas.width,y:canvas.height},{x:0,y:canvas.height}];
+  stopStream(); finalizeCapture(false);
+}
+
+/* ======================================================================
+   AJUSTE DE CANTOS
+   ====================================================================== */
+const cropImg=document.getElementById('cropImg'), cropSvg=document.getElementById('cropSvg'), cropPoly=document.getElementById('cropPoly');
+let dispRect=null, handlePts=null;
+function openCorners(){
+  go('corners');
+  cropImg.src=capCanvas.toDataURL('image/jpeg',0.95);
+  cropImg.onload=()=>{
+    const r=cropImg.getBoundingClientRect(), stage=document.getElementById('cropStage').getBoundingClientRect();
+    dispRect={left:r.left-stage.left, top:r.top-stage.top, w:r.width, h:r.height};
+    const kx=r.width/capCanvas.width, ky=r.height/capCanvas.height;
+    handlePts=capQuad.map(p=>({x:dispRect.left+p.x*kx, y:dispRect.top+p.y*ky}));
+    cropSvg.style.left='0'; cropSvg.style.top='0'; cropSvg.setAttribute('width',stage.width); cropSvg.setAttribute('height',stage.height);
+    layoutHandles();
+  };
+}
+function layoutHandles(){
+  cropPoly.setAttribute('points', handlePts.map(p=>p.x+','+p.y).join(' '));
+  document.querySelectorAll('#corners .handle').forEach(h=>{ const i=+h.dataset.i; h.style.left=handlePts[i].x+'px'; h.style.top=handlePts[i].y+'px'; });
+}
+(function enableDrag(){
+  let cur=null;
+  const stage=document.getElementById('cropStage');
+  document.querySelectorAll('#corners .handle').forEach(h=>{
+    h.addEventListener('pointerdown',e=>{ cur=+h.dataset.i; h.setPointerCapture(e.pointerId); e.preventDefault(); });
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(cur===null||!dispRect) return;
+    const sr=stage.getBoundingClientRect();
+    let x=e.clientX-sr.left, y=e.clientY-sr.top;
+    x=Math.max(dispRect.left,Math.min(dispRect.left+dispRect.w,x));
+    y=Math.max(dispRect.top,Math.min(dispRect.top+dispRect.h,y));
+    handlePts[cur]={x,y}; layoutHandles();
+  });
+  stage.addEventListener('pointerup',()=>cur=null);
+  stage.addEventListener('pointercancel',()=>cur=null);
+})();
+function retake(){ startCamera(state.current); }
+function useWhole(){
+  capQuad=[{x:0,y:0},{x:capCanvas.width,y:0},{x:capCanvas.width,y:capCanvas.height},{x:0,y:capCanvas.height}];
+  finalizeCapture(false);
+}
+function useCropped(){
+  // converte handles (coords de tela) → coords do canvas capturado
+  const kx=capCanvas.width/dispRect.w, ky=capCanvas.height/dispRect.h;
+  capQuad = handlePts.map(p=>({x:(p.x-dispRect.left)*kx, y:(p.y-dispRect.top)*ky}));
+  finalizeCapture(true);
+}
+
+async function finalizeCapture(doWarp){
+  busy(true,'Digitalizando…');
+  await new Promise(r=>setTimeout(r,30));
+  let srcCanvas=capCanvas, scanned=false;
+  try{
+    const ok=await loadOpenCV(4000);
+    if(ok){
+      const img=await loadImg(capCanvas.toDataURL('image/jpeg',0.95));
+      const warped = doWarp ? warpToCanvas(img,capQuad) : (()=>{const c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);return c;})();
+      const wimg=await loadImg(warped.toDataURL('image/jpeg',0.95));
+      srcCanvas = enhanceCV(wimg,'cor'); scanned=true;
+    }
+  }catch(e){ console.warn('scanner fallback',e); }
+  const url=srcCanvas.toDataURL('image/jpeg',0.92);
+  const st=state.currentStep;
+  const name = docFileName(st.key)+'.jpg';
+  addFile(st.key,{kind:'image', name, url, scanned});
+  busy(false);
+  go('step');
+}
+function docFileName(key){ return key.toUpperCase(); }
+
+/* ---------- warpPerspective ---------- */
+function warpToCanvas(img,quad){
+  const src=cv.imread(img);
+  const [tl,tr,br,bl]=quad;
+  const wA=Math.hypot(br.x-bl.x,br.y-bl.y), wB=Math.hypot(tr.x-tl.x,tr.y-tl.y);
+  const hA=Math.hypot(tr.x-br.x,tr.y-br.y), hB=Math.hypot(tl.x-bl.x,tl.y-bl.y);
+  const W=Math.max(2,Math.round(Math.max(wA,wB))), H=Math.max(2,Math.round(Math.max(hA,hB)));
+  const srcPts=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]);
+  const dstPts=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,W,0,W,H,0,H]);
+  const M=cv.getPerspectiveTransform(srcPts,dstPts);
+  const dst=new cv.Mat();
+  cv.warpPerspective(src,dst,M,new cv.Size(W,H),cv.INTER_LINEAR,cv.BORDER_REPLICATE,new cv.Scalar());
+  const out=document.createElement('canvas'); out.width=W; out.height=H; cv.imshow(out,dst);
+  src.delete();srcPts.delete();dstPts.delete();M.delete();dst.delete();
+  return out;
+}
+
+/* ---------- realce estilo scanner ---------- */
+function enhanceCV(img,mode){
+  const src=cv.imread(img);
+  const gray=new cv.Mat(); cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+  // estima iluminação do papel (close numa escala reduzida) e divide
+  const bg=new cv.Mat();
+  const k=cv.getStructuringElement(cv.MORPH_ELLIPSE,new cv.Size(17,17));
+  cv.morphologyEx(gray,bg,cv.MORPH_CLOSE,k);
+  cv.GaussianBlur(bg,bg,new cv.Size(0,0),9);
+  const norm=new cv.Mat();
+  cv.divide(gray,bg,norm,255.0);
+  // auto-níveis por percentis (aprox. 3 e 90)
+  const {lo,hi}=percentiles(norm,3,92);
+  const lev=new cv.Mat();
+  const a=255/Math.max(1,(hi-lo));
+  norm.convertTo(lev,cv.CV_8U,a,-lo*a);
+  let outMat;
+  if(mode==='pb'){ outMat=lev; }
+  else {
+    // Cor: reforça a tinta usando o canal de luminância nivelado sobre o colorido
+    const rgb=new cv.Mat(); cv.cvtColor(src,rgb,cv.COLOR_RGBA2RGB);
+    const levC=new cv.Mat(); cv.cvtColor(lev,levC,cv.COLOR_GRAY2RGB);
+    outMat=new cv.Mat(); cv.addWeighted(rgb,0.45,levC,0.55,0,outMat);
+    rgb.delete(); levC.delete(); lev.delete();
+  }
+  // máscara de nitidez (unsharp com box blur)
+  const blur=new cv.Mat(); cv.blur(outMat,blur,new cv.Size(3,3));
+  const sharp=new cv.Mat(); cv.addWeighted(outMat,1.5,blur,-0.5,0,sharp);
+  const out=document.createElement('canvas'); cv.imshow(out,sharp);
+  src.delete();gray.delete();bg.delete();k.delete();norm.delete();outMat.delete();blur.delete();sharp.delete();
+  return out;
+}
+function percentiles(mat,pLo,pHi){
+  const hist=new Array(256).fill(0); const d=mat.data; const n=d.length;
+  for(let i=0;i<n;i++) hist[d[i]]++;
+  const loT=n*pLo/100, hiT=n*pHi/100; let acc=0,lo=0,hi=255;
+  for(let v=0;v<256;v++){ acc+=hist[v]; if(acc>=loT){lo=v;break;} }
+  acc=0; for(let v=0;v<256;v++){ acc+=hist[v]; if(acc>=hiT){hi=v;break;} }
+  if(hi<=lo) hi=lo+1;
+  return {lo,hi};
+}
+
+/* ======================================================================
+   IDENTIFICAÇÃO (Nome, CPF, placas)
+   ====================================================================== */
+function plateFields(){
+  const v=state.vehicle;
+  if(v.crlv==='simples') return [{key:'placa', label:'Placa do veículo'}];
+  const arr=[{key:'placa_cavalo', label:'Placa do cavalo'}];
+  for(let i=1;i<=v.carretas;i++) arr.push({key:'placa_carreta'+i, label:'Placa da carreta'+(v.carretas>1?' '+i:'')});
+  return arr;
+}
+function validCPF(v){ return (v||'').replace(/\D/g,'').length===11; }
+function maskCPF(v){ v=(v||'').replace(/\D/g,'').slice(0,11); return v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'); }
+function identComplete(){
+  const d=state.ident;
+  if(!d.nome||d.nome.trim().length<3) return false;
+  if(!validCPF(d.cpf)) return false;
+  return plateFields().every(f=>(d[f.key]||'').replace(/\W/g,'').length>=6);
+}
+function setPlate(k,el){ el.value=el.value.toUpperCase(); state.ident[k]=el.value; }
+function renderIdent(st){
+  const d=state.ident;
+  const plates=plateFields().map(f=>`<div class="field"><label>${f.label} <span class="req">*</span></label><input value="${d[f.key]||''}" maxlength="8" oninput="setPlate('${f.key}',this)" placeholder="ABC1D23"></div>`).join('');
+  document.getElementById('stepBody').className='content';
+  document.getElementById('stepBody').innerHTML=
+    `<div class="cap-head"><h2 class="big">Identificação</h2><p>Dados do motorista e do veículo para o cadastro no ERP.</p></div>
+     <div class="field"><label>Nome completo do motorista <span class="req">*</span></label><input value="${d.nome||''}" oninput="state.ident.nome=this.value" placeholder="Nome e sobrenome"></div>
+     <div class="field"><label>CPF <span class="req">*</span></label><input value="${d.cpf||''}" inputmode="numeric" oninput="state.ident.cpf=maskCPF(this.value);this.value=state.ident.cpf" placeholder="000.000.000-00"></div>
+     <div class="divider"><span class="ln"></span>Placas<span class="ln"></span></div>${plates}`;
+  document.getElementById('stepFoot').innerHTML=`<button class="btn primary" onclick="saveIdent()">Salvar etapa ✓</button>`;
+}
+function saveIdent(){ if(!identComplete()){ alert('Preencha o nome, o CPF (11 dígitos) e todas as placas.'); return; } renderFlow(); go('flow'); }
+
+/* ======================================================================
+   DADOS BANCÁRIOS
+   ====================================================================== */
+function bankComplete(){
+  if((state.files['banco']||[]).length>=1) return true;
+  const b=state.bank; return !!(b.banco&&b.agencia&&b.conta);
+}
+function setBankTipo(t){ state.bank.tipo=t; renderBank(state.currentStep); }
+function saveBank(){ if(!bankComplete()){ alert('Envie o comprovante OU preencha ao menos Banco, Agência e Conta.'); return; } renderFlow(); go('flow'); }
+function renderBank(st){
+  const b=state.bank, files=state.files['banco']||[];
+  let fileHtml='';
+  if(files.length){
+    const f=files[0];
+    const thumb=f.kind==='image'?`<img src="${f.url}" alt="">`:`<svg viewBox="0 0 24 24" stroke="#8894A2" fill="none" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+    fileHtml=`<div class="files" style="margin-top:6px"><div class="filecard"><div class="fthumb">${thumb}</div><div class="fi"><div class="fn">${f.name}</div><div class="fm">${f.kind==='image'?'imagem ✓':'PDF ✓'}</div></div><div class="fdel" onclick="removeFile('banco',0)"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div></div>`;
+  }
+  document.getElementById('stepBody').className='content';
+  document.getElementById('stepBody').innerHTML=
+   `<div class="cap-head"><h2 class="big">Dados bancários</h2><p>Para quem é o pagamento? Envie o comprovante OU digite os dados.</p></div>
+    <div class="seg"><button class="${b.tipo==='motorista'?'on':''}" onclick="setBankTipo('motorista')">Motorista</button><button class="${b.tipo==='antt'?'on':''}" onclick="setBankTipo('antt')">ANTT</button></div>
+    <div class="cap-actions">
+      <div class="cap-btn foto" onclick="startCamera('banco')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Tirar foto<small>comprovante / cartão</small></div>
+      <div class="cap-btn up" onclick="pickFile('banco')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Enviar arquivo<small>PDF ou imagem</small></div>
+    </div>${fileHtml}
+    <div class="divider"><span class="ln"></span>ou digite<span class="ln"></span></div>
+    <div class="frow"><div class="field"><label>Banco</label><input value="${b.banco||''}" oninput="state.bank.banco=this.value" placeholder="Ex.: 341 Itaú"></div>
+      <div class="field"><label>Tipo de conta</label><select onchange="state.bank.tpconta=this.value"><option value="">—</option><option ${b.tpconta==='Corrente'?'selected':''}>Corrente</option><option ${b.tpconta==='Poupança'?'selected':''}>Poupança</option></select></div></div>
+    <div class="frow"><div class="field"><label>Agência</label><input value="${b.agencia||''}" inputmode="numeric" oninput="state.bank.agencia=this.value" placeholder="0000"></div>
+      <div class="field"><label>Conta</label><input value="${b.conta||''}" inputmode="numeric" oninput="state.bank.conta=this.value" placeholder="00000-0"></div></div>
+    <div class="field"><label>Titular da conta</label><input value="${b.titular||''}" oninput="state.bank.titular=this.value" placeholder="Nome do titular"></div>
+    <div class="field"><label>CPF/CNPJ do titular</label><input value="${b.doc||''}" oninput="state.bank.doc=this.value" placeholder="CPF ou CNPJ"></div>
+    <div class="field"><label>Chave PIX</label><input value="${b.pix||''}" oninput="state.bank.pix=this.value" placeholder="CPF, e-mail, telefone ou aleatória"></div>`;
+  const done=bankComplete();
+  document.getElementById('stepFoot').innerHTML=`<button class="btn primary" onclick="saveBank()">${done?'Salvar etapa ✓':'Comprovante ou Banco+Agência+Conta'}</button>`;
+}
+
+/* ======================================================================
+   REFERÊNCIAS
+   ====================================================================== */
+function refsComplete(){ return state.refs.filter(r=>(r.nome||'').trim()&&(r.tel||'').trim()).length>=3; }
+function addRef(){ state.refs.push({}); renderRefs(state.currentStep); }
+function delRef(i){ state.refs.splice(i,1); renderRefs(state.currentStep); }
+function renderRefs(st){
+  const rows=state.refs.map((r,i)=>`<div class="refrow"><div class="rh"><b>Referência ${i+1}</b>${state.refs.length>3?`<button class="rdel" onclick="delRef(${i})">remover</button>`:''}</div>
+    <div class="field" style="margin-bottom:8px"><input value="${r.nome||''}" oninput="state.refs[${i}].nome=this.value" placeholder="Nome do contato"></div>
+    <div class="field" style="margin-bottom:0"><input value="${r.tel||''}" inputmode="tel" oninput="state.refs[${i}].tel=this.value" placeholder="Telefone / WhatsApp"></div></div>`).join('');
+  document.getElementById('stepBody').className='content';
+  document.getElementById('stepBody').innerHTML=
+   `<div class="cap-head"><h2 class="big">Referências</h2><p>Opcional. Se incluir, preencha ao menos 3 contatos.</p></div>${rows}
+    <button class="addbtn" onclick="addRef()">+ Adicionar referência</button>`;
+  document.getElementById('stepFoot').innerHTML=`<button class="btn primary" onclick="renderFlow();go('flow')">Salvar e voltar</button>`;
+}
+
+/* ======================================================================
+   FOTOS DO VEÍCULO (Câmera GPS)
+   ====================================================================== */
+function renderPhotos(st){
+  const slots=[{k:'frente',l:'Frente do veículo'},{k:'lateral',l:'Lateral do veículo'}];
+  let html=`<div class="cap-head"><h2 class="big">Fotos do veículo</h2><p>Duas fotos com data, hora e localização (GPS).</p></div><div class="photoslots">`;
+  slots.forEach(s=>{
+    const p=state.photos[s.k];
+    const pv=p?`<img src="${p.url}" alt="">`:`<div class="ph">📷</div>`;
+    html+=`<div class="pslot ${p?'ok':''}"><div class="pv">${pv}</div>
+      <div class="pl">${s.l}${p?'<span class="st">✓ GPS</span>':''}</div>
+      <div class="pa">
+        <button class="foto" onclick="startGpsCam('${s.k}','${s.l}')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>Foto GPS</button>
+        <button class="up" onclick="uploadPhoto('${s.k}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Enviar</button>
+      </div></div>`;
+  });
+  html+=`</div><div class="note">Ao <b>tirar foto</b>, a câmera carimba data/hora e endereço na imagem. No <b>envio</b>, pegamos sua localização atual e carimbamos.</div>`;
+  document.getElementById('stepBody').className='content';
+  document.getElementById('stepBody').innerHTML=html;
+  const done=!!(state.photos.frente&&state.photos.lateral);
+  document.getElementById('stepFoot').innerHTML=`<button class="btn primary" onclick="go('flow')">${done?'Concluir etapa ✓':'Voltar ao checklist'}</button>`;
+}
+
+let gstream=null, gfacing='environment', fix=null, place=null, lastGeoAt=0, lastGeoLatLon=null, geoWatch=null, gpsSlot=null, gpsTimer=null;
+const gpsVideo=document.getElementById('gpsVideo'), gpsStampEl=document.getElementById('gpsStamp');
+
+async function startGpsCam(slot,label){
+  gpsSlot=slot; document.getElementById('gpsTitle').textContent=label; go('gpscam'); startGeo();
+  try{
+    gstream=await navigator.mediaDevices.getUserMedia({video:{facingMode:gfacing,width:{ideal:3840},height:{ideal:2160}},audio:false});
+    gpsVideo.srcObject=gstream; await gpsVideo.play();
+    if(gpsTimer)clearInterval(gpsTimer); gpsTimer=setInterval(renderGpsStamp,1000); renderGpsStamp();
+  }catch(err){ alert('Não consegui abrir a câmera ('+err.name+'). Use “Enviar” ou tente no celular.'); closeGpsCam(); }
+}
+function stopGps(){ if(gpsTimer){clearInterval(gpsTimer);gpsTimer=null;} if(geoWatch!=null){navigator.geolocation.clearWatch(geoWatch);geoWatch=null;} if(gstream){gstream.getTracks().forEach(t=>t.stop());gstream=null;} }
+function closeGpsCam(){ stopGps(); refreshStep(); go('step'); }
+async function flipGpsCam(){ gfacing=gfacing==='environment'?'user':'environment'; if(gstream){gstream.getTracks().forEach(t=>t.stop());gstream=null;} startGpsCam(gpsSlot,document.getElementById('gpsTitle').textContent); }
+
+function gpsChip(s,txt){ document.getElementById('gpsDot').className='gps-dot '+s; document.getElementById('gpsTxt').textContent=txt; }
+function startGeo(){
+  if(!navigator.geolocation){ gpsChip('bad','sem GPS'); return; }
+  geoWatch=navigator.geolocation.watchPosition(p=>{
+    fix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy||0};
+    gpsChip(fix.acc<=30?'ok':'searching','GPS ±'+Math.round(fix.acc)+' m'); maybeGeocode(); renderGpsStamp();
+  },err=>{ gpsChip('bad',err.code===1?'GPS bloqueado':'sem sinal'); renderGpsStamp(); },{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+}
+function distGeo(a,b){ const R=6371000,t=Math.PI/180,dLat=(b.lat-a.lat)*t,dLon=(b.lon-a.lon)*t; const s=Math.sin(dLat/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
+async function maybeGeocode(force){
+  if(!fix)return;
+  const moved=!lastGeoLatLon||distGeo(lastGeoLatLon,fix)>120, old=Date.now()-lastGeoAt>120000;
+  if(!force&&!moved&&!old&&place)return;
+  lastGeoAt=Date.now(); lastGeoLatLon={lat:fix.lat,lon:fix.lon};
+  const g=await reverseGeocode(fix.lat,fix.lon); if(g){place=g;renderGpsStamp();}
+}
+async function reverseGeocode(lat,lon){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=pt-BR&zoom=18`);
+    if(r.ok){ const d=await r.json(), a=d.address||{};
+      let via=[a.road,a.house_number].filter(Boolean).join(', '); if(!via&&a.ref)via=a.ref;
+      const city=a.city||a.town||a.village||a.municipality||a.county||'';
+      let bairro=a.suburb||a.neighbourhood||a.city_district||a.quarter||''; if(bairro&&bairro===city)bairro='';
+      return {city, district:bairro, state:a.state||'', stateCode:a['ISO3166-2-lvl4']?a['ISO3166-2-lvl4'].split('-').pop():'', country:a.country||'', postcode:a.postcode||'', street:via};
+    }
+  }catch(e){}
+  try{
+    const r=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=pt`);
+    if(r.ok){ const d=await r.json();
+      return {city:d.city||d.locality||'', district:(d.locality&&d.city&&d.locality!==d.city)?d.locality:'', state:d.principalSubdivision||'', stateCode:(d.principalSubdivisionCode||'').split('-').pop()||'', country:d.countryName||'', postcode:d.postcode||'', street:''};
+    }
+  }catch(e){}
+  return null;
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function stampLines(d){
+  d=d||new Date(); const L=[];
+  L.push(`${pad2(d.getDate())}:${pad2(d.getMonth()+1)}:${d.getFullYear()} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`);
+  const plate=state.ident.placa||state.ident.placa_cavalo; if(plate)L.push({text:plate,accent:true});
+  if(place){
+    if(place.street)L.push(place.street);
+    if(place.district)L.push(place.district);
+    const uf=place.stateCode||place.state;
+    if(place.city&&uf)L.push(place.city+' '+uf); else if(place.city)L.push(place.city); else if(uf)L.push(uf);
+    if(place.postcode)L.push(place.postcode);
+    if(place.country)L.push(place.country);
+  } else if(fix){ L.push('Localizando endereço…'); } else { L.push('Sem sinal de GPS'); }
+  if(fix)L.push(`${fix.lat.toFixed(6)}, ${fix.lon.toFixed(6)} · ±${Math.round(fix.acc)}m`);
+  return L;
+}
+function renderGpsStamp(){ gpsStampEl.innerHTML=stampLines().map(l=>typeof l==='string'?`<div>${esc(l)}</div>`:`<div class="ref">${esc(l.text)}</div>`).join(''); }
+function drawStamp(ctx,W,H,lines){
+  const size=Math.max(15,Math.round(W*0.030)), lh=Math.round(size*1.26);
+  const padX=Math.round(W*0.018), padY=Math.round(H*0.022);
+  ctx.textBaseline='alphabetic'; ctx.font=`700 ${size}px Inter, Arial, sans-serif`; ctx.textAlign='right';
+  const x=W-padX, first=H-padY-lh*(lines.length-1);
+  let w=0; lines.forEach(l=>{ w=Math.max(w,ctx.measureText(typeof l==='string'?l:l.text).width); });
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(x-w-size*0.5,first-lh,w+size,lh*lines.length+size*0.5);
+  ctx.shadowColor='rgba(0,0,0,.85)'; ctx.shadowBlur=Math.round(size*0.35); ctx.shadowOffsetY=Math.round(size*0.09);
+  lines.forEach((l,i)=>{ ctx.fillStyle=(typeof l==='object'&&l.accent)?'#C8F031':'#FFFFFF'; ctx.fillText(typeof l==='string'?l:l.text,x,first+i*lh); });
+  ctx.shadowColor='transparent';
+}
+async function captureGpsPhoto(){
+  if(!gstream)return;
+  const W=gpsVideo.videoWidth, H=gpsVideo.videoHeight, MAX=3000, scale=Math.min(1,MAX/Math.max(W,H));
+  const cw=Math.round(W*scale), ch=Math.round(H*scale);
+  const c=document.createElement('canvas'); c.width=cw; c.height=ch; const ctx=c.getContext('2d');
+  if(gfacing==='user'){ ctx.translate(cw,0); ctx.scale(-1,1); }
+  ctx.drawImage(gpsVideo,0,0,cw,ch); ctx.setTransform(1,0,0,1,0,0);
+  const when=new Date(); maybeGeocode(true);
+  try{ await document.fonts.ready; }catch(e){}
+  drawStamp(ctx,cw,ch,stampLines(when));
+  if(navigator.vibrate)navigator.vibrate(35);
+  state.photos[gpsSlot]={url:c.toDataURL('image/jpeg',0.92), geo:fix?{lat:fix.lat,lon:fix.lon,acc:fix.acc}:null};
+  stopGps(); refreshStep(); renderFlow(); go('step');
+}
+
+/* upload de foto do veículo com carimbo de geolocalização */
+let photoTarget=null;
+function uploadPhoto(slot){ photoTarget=slot; const inp=document.getElementById('photoInput'); inp.value=''; inp.click(); }
+document.getElementById('photoInput').addEventListener('change', async e=>{
+  const file=e.target.files[0]; if(!file||!photoTarget)return; const slot=photoTarget;
+  busy(true,'Lendo localização…');
+  const pos=await new Promise(res=>{ if(!navigator.geolocation)return res(null); navigator.geolocation.getCurrentPosition(p=>res(p),()=>res(null),{enableHighAccuracy:true,timeout:15000,maximumAge:10000}); });
+  if(pos){ fix={lat:pos.coords.latitude,lon:pos.coords.longitude,acc:pos.coords.accuracy||0}; await maybeGeocode(true); }
+  busy(true,'Carimbando…');
+  const dataUrl=await fileToDataURL(file);
+  const img=await loadImg(dataUrl);
+  const MAX=3000, scale=Math.min(1,MAX/Math.max(img.width,img.height));
+  const cw=Math.round(img.width*scale), ch=Math.round(img.height*scale);
+  const c=document.createElement('canvas'); c.width=cw; c.height=ch; const ctx=c.getContext('2d');
+  ctx.drawImage(img,0,0,cw,ch);
+  try{ await document.fonts.ready; }catch(e){}
+  drawStamp(ctx,cw,ch,stampLines(new Date()));
+  state.photos[slot]={url:c.toDataURL('image/jpeg',0.92), geo:fix?{lat:fix.lat,lon:fix.lon,acc:fix.acc}:null};
+  busy(false); refreshStep(); renderFlow();
+});
+
+/* ======================================================================
+   FINALIZAÇÃO — revisão + entrega por WhatsApp (arquivos separados)
+   ====================================================================== */
+function finish(){ renderReview(); go('review'); }
+
+function slug(s){ return ((s||'MOTORISTA').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toUpperCase())||'MOTORISTA'; }
+function mainPlate(){ return (state.ident.placa||state.ident.placa_cavalo||'SEM-PLACA').replace(/\W/g,''); }
+function docLabel(key){
+  const base={cnh:'CNH',crlv:'CRLV',antt:'ANTT',crlv_cavalo:'CRLV-CAVALO',antt_cavalo:'ANTT-CAVALO',endereco:'ENDERECO',banco:'BANCO'};
+  if(base[key]) return base[key];
+  if(key.startsWith('crlv_carreta')) return 'CRLV-CARRETA'+key.replace('crlv_carreta','');
+  if(key.startsWith('antt_carreta')) return 'ANTT-CARRETA'+key.replace('antt_carreta','');
+  return key.toUpperCase();
+}
+function dataURLtoBlob(u){
+  const [h,b]=u.split(','); const mime=(h.match(/:(.*?);/)||[])[1]||'image/jpeg';
+  const bin=atob(b), a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);
+  return new Blob([a],{type:mime});
+}
+function summaryText(){
+  const d=state.ident,b=state.bank,v=state.vehicle,L=[];
+  L.push('CADASTRO — TRANSPORTES ARI','',`Veículo: ${v.nome} (${v.eixos} eixos)`,`Motorista: ${d.nome||'-'}`,`CPF: ${d.cpf||'-'}`);
+  plateFields().forEach(f=>L.push(`${f.label}: ${d[f.key]||'-'}`));
+  L.push('',`Pagamento para: ${b.tipo==='antt'?'ANTT':'Motorista'}`);
+  if((state.files['banco']||[]).length) L.push('Comprovante bancário: enviado (arquivo em anexo)');
+  if(b.banco||b.agencia||b.conta) L.push(`Banco: ${b.banco||'-'} | Agência: ${b.agencia||'-'} | Conta: ${b.conta||'-'}${b.tpconta?' ('+b.tpconta+')':''}`);
+  if(b.titular) L.push(`Titular: ${b.titular}${b.doc?' — '+b.doc:''}`);
+  if(b.pix) L.push(`PIX: ${b.pix}`);
+  const refs=state.refs.filter(r=>(r.nome||'').trim()&&(r.tel||'').trim());
+  if(refs.length){ L.push('','Referências:'); refs.forEach((r,i)=>L.push(`  ${i+1}. ${r.nome} — ${r.tel}`)); }
+  L.push('',`Gerado em ${new Date().toLocaleString('pt-BR')}`);
+  return L.join('\n');
+}
+function deliverables(){
+  const base=`${slug(state.ident.nome)}_${(state.ident.cpf||'').replace(/\D/g,'')}_${mainPlate()}`;
+  const out=[];
+  Object.keys(state.files).forEach(key=>{
+    const f=(state.files[key]||[])[0]; if(!f) return;
+    const ext=f.kind==='pdf'?'pdf':'jpg';
+    const blob=f.blob||dataURLtoBlob(f.url);
+    out.push({name:`${base}_${docLabel(key)}.${ext}`, blob});
+  });
+  ['frente','lateral'].forEach(k=>{ const p=state.photos[k]; if(p) out.push({name:`${base}_VEICULO-${k.toUpperCase()}.jpg`, blob:dataURLtoBlob(p.url)}); });
+  out.push({name:`${base}_RESUMO.txt`, blob:new Blob([summaryText()],{type:'text/plain'})});
+  return out;
+}
+function docCell(f,cap){
+  const im=f?(f.kind==='image'?`<img src="${f.url}">`:`<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`)
+                :`<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`;
+  return `<div class="rev-doc"><div class="im">${im}</div><div class="cap">${esc(cap)}</div></div>`;
+}
+function renderReview(){
+  document.getElementById('revSub').textContent=state.vehicle.nome;
+  const d=state.ident,b=state.bank;
+  let idLines=`<div class="rev-line"><span>Motorista</span><b>${esc(d.nome||'-')}</b></div><div class="rev-line"><span>CPF</span><b>${esc(d.cpf||'-')}</b></div>`;
+  plateFields().forEach(f=>idLines+=`<div class="rev-line"><span>${f.label}</span><b>${esc(d[f.key]||'-')}</b></div>`);
+  let bankLines=`<div class="rev-line"><span>Pagamento</span><b>${b.tipo==='antt'?'ANTT':'Motorista'}</b></div>`;
+  if((state.files['banco']||[]).length) bankLines+=`<div class="rev-line"><span>Comprovante</span><b>enviado ✓</b></div>`;
+  if(b.banco||b.agencia||b.conta) bankLines+=`<div class="rev-line"><span>Banco / Ag / Conta</span><b>${esc((b.banco||'-')+' / '+(b.agencia||'-')+' / '+(b.conta||'-'))}</b></div>`;
+  if(b.pix) bankLines+=`<div class="rev-line"><span>PIX</span><b>${esc(b.pix)}</b></div>`;
+  let cells='';
+  state.steps.forEach(st=>{
+    if(st.kind!=='doc') return;
+    if(st.sameAntt&&state.sameAntt[st.key]){ cells+=docCell(null,st.title.replace('ANTT — ','ANTT ')+' = cavalo'); return; }
+    const f=(state.files[st.key]||[])[0]; if(f) cells+=docCell(f,st.title);
+  });
+  const bf=(state.files['banco']||[])[0]; if(bf) cells+=docCell(bf,'Banco');
+  ['frente','lateral'].forEach(k=>{ if(state.photos[k]) cells+=docCell({kind:'image',url:state.photos[k].url},'Veículo '+k); });
+  const refs=state.refs.filter(r=>(r.nome||'').trim()&&(r.tel||'').trim());
+  const refLines=refs.length?refs.map((r,i)=>`<div class="rev-line"><span>${i+1}. ${esc(r.nome)}</span><b>${esc(r.tel)}</b></div>`).join(''):'<div class="rev-line"><span>—</span><b>nenhuma</b></div>';
+  document.getElementById('reviewBody').innerHTML=
+   `<div class="rev-card"><h3>Identificação</h3>${idLines}</div>
+    <div class="rev-card"><h3>Dados bancários</h3>${bankLines}</div>
+    <div class="rev-card"><h3>Documentos &amp; fotos</h3><div class="rev-grid">${cells}</div></div>
+    <div class="rev-card"><h3>Referências</h3>${refLines}</div>`;
+}
+async function shareWhatsApp(){
+  const items=deliverables();
+  const files=items.map(i=>new File([i.blob],i.name,{type:i.blob.type||'application/octet-stream'}));
+  if(navigator.canShare && navigator.canShare({files})){
+    try{ await navigator.share({files, title:'Cadastro — '+(state.ident.nome||'Transportes ARI'), text:summaryText()}); }
+    catch(e){ if(e && e.name==='AbortError') return; alert('Não foi possível compartilhar direto. Vou baixar os arquivos para você anexar no WhatsApp.'); downloadAll(); }
+  } else {
+    alert('Seu navegador não compartilha arquivos direto (comum no desktop). Vou baixar os '+items.length+' arquivos para você anexar no WhatsApp.');
+    downloadAll();
+  }
+}
+function downloadAll(){
+  const items=deliverables();
+  items.forEach((it,i)=>setTimeout(()=>{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(it.blob); a.download=it.name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }, i*350));
+}
+
+/* init */
+renderVehicles();
+</script>
+</body>
+</html>

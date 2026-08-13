@@ -28,6 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --void:#0E1116;
@@ -255,6 +256,15 @@
   .rev-doc .im img{width:100%;height:100%;object-fit:cover}
   .rev-doc .im svg{width:24px;height:24px;stroke:var(--hiviz);fill:none;stroke-width:1.6}
   .rev-doc .cap{font-size:9px;padding:4px 3px;text-align:center;color:var(--slate);border-top:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ---------- ajustes câmera / fotos (v2) ---------- */
+  #camera,#gpscam,#corners{height:100dvh;overflow:hidden}
+  .cam-stage,.crop-stage{min-height:0}
+  .pslot .pv{cursor:pointer}
+  .pslot .pv .ph{color:var(--slate);font-size:26px;text-align:center;line-height:1.25}
+  .pslot .pv .ph small{display:block;font-size:11px;margin-top:5px;color:var(--slate)}
+  .pslot .pupload{border:0;border-top:1px solid var(--line);padding:14px;background:var(--strap);color:#1a0d04;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+  .pslot .pupload svg{width:19px;height:19px;stroke:#1a0d04;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
   /* ---------- overlay de processamento ---------- */
   #busy{position:fixed;inset:0;z-index:60;background:rgba(14,17,22,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;backdrop-filter:blur(3px)}
@@ -529,8 +539,9 @@ function stepDone(st){
   return !!state.done[st.key];
 }
 function firstThumb(key){
-  const f=(state.files[key]||[]).find(x=>x.kind==='image');
-  return f?f.url:null;
+  const f=(state.files[key]||[])[0];
+  if(!f) return null;
+  return f.kind==='image' ? f.url : (f.thumb||null);
 }
 
 function renderFlow(){
@@ -604,9 +615,11 @@ function renderCapture(st){
     if(files.length){
       html += `<p class="eyebrow" style="margin:16px 0 8px">Enviado</p><div class="files">`;
       files.forEach((f,idx)=>{
-        const thumb = f.kind==='image' ? `<img src="${f.url}" alt="">` : `<svg viewBox="0 0 24 24" stroke="#8894A2" fill="none" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+        const timg = f.kind==='image' ? f.url : f.thumb;
+        const thumb = timg ? `<img src="${timg}" alt="">` : `<svg viewBox="0 0 24 24" stroke="#8894A2" fill="none" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
         const enhBtn = (f.kind==='image' && !f.scanned) ? `<button class="btn ghost" style="width:auto;padding:8px 12px;font-size:12px;margin-right:6px" onclick="enhanceFile('${st.key}',${idx})">Melhorar</button>` : '';
-        html += `<div class="filecard"><div class="fthumb">${thumb}</div><div class="fi"><div class="fn">${f.name}</div><div class="fm">${f.kind==='image'?(f.scanned?'digitalizado ✓':'imagem ✓'):'PDF ✓'}</div></div>${enhBtn}<div class="fdel" onclick="removeFile('${st.key}',${idx})"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`;
+        const fm = f.kind==='pdf' ? (f.scanned?'PDF digitalizado ✓':'PDF ✓') : (f.scanned?'digitalizado ✓':'imagem ✓');
+        html += `<div class="filecard"><div class="fthumb">${thumb}</div><div class="fi"><div class="fn">${f.name}</div><div class="fm">${fm}</div></div>${enhBtn}<div class="fdel" onclick="removeFile('${st.key}',${idx})"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`;
       });
       html += `</div>`;
     }
@@ -824,10 +837,11 @@ function grabFullFrame(){
 function capturePhoto(){
   const {canvas,scale}=grabFullFrame();
   capCanvas=canvas;
-  // quad detectado (coords full-res) → escala para o canvas capturado
-  capQuad = lastQuad ? lastQuad.map(p=>({x:p.x*scale,y:p.y*scale}))
-                     : [{x:canvas.width*.1,y:canvas.height*.1},{x:canvas.width*.9,y:canvas.height*.1},{x:canvas.width*.9,y:canvas.height*.9},{x:canvas.width*.1,y:canvas.height*.9}];
-  stopStream(); openCorners();
+  // um toque: usa o recorte detectado automaticamente (se houver) e já finaliza
+  const hasQuad=!!lastQuad;
+  capQuad = hasQuad ? lastQuad.map(p=>({x:p.x*scale,y:p.y*scale}))
+                    : [{x:0,y:0},{x:canvas.width,y:0},{x:canvas.width,y:canvas.height},{x:0,y:canvas.height}];
+  stopStream(); finalizeCapture(hasQuad);
 }
 function captureWholeFrame(){
   const {canvas}=grabFullFrame(); capCanvas=canvas;
@@ -888,24 +902,49 @@ function useCropped(){
 async function finalizeCapture(doWarp){
   busy(true,'Digitalizando…');
   await new Promise(r=>setTimeout(r,30));
-  let srcCanvas=capCanvas, scanned=false;
+  let outCanvas=capCanvas, scanned=false;
   try{
     const ok=await loadOpenCV(4000);
     if(ok){
       const img=await loadImg(capCanvas.toDataURL('image/jpeg',0.95));
-      const warped = doWarp ? warpToCanvas(img,capQuad) : (()=>{const c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);return c;})();
+      const warped = doWarp ? warpToCanvas(img,capQuad) : cloneCanvas(img);
       const wimg=await loadImg(warped.toDataURL('image/jpeg',0.95));
-      srcCanvas = enhanceCV(wimg,'cor'); scanned=true;
-    }
-  }catch(e){ console.warn('scanner fallback',e); }
-  const url=srcCanvas.toDataURL('image/jpeg',0.92);
-  const st=state.currentStep;
-  const name = docFileName(st.key)+'.jpg';
-  addFile(st.key,{kind:'image', name, url, scanned});
+      outCanvas = enhanceCV(wimg,'cor'); scanned=true;
+    } else { outCanvas = enhanceJS(capCanvas); scanned=true; }
+  }catch(e){ console.warn('scanner fallback',e); try{ outCanvas=enhanceJS(capCanvas); scanned=true; }catch(_){ outCanvas=capCanvas; } }
+  const thumb=outCanvas.toDataURL('image/jpeg',0.9);
+  const st=state.currentStep, base=docFileName(st.key);
+  const pdfBlob=canvasToPDF(outCanvas);
+  const fileObj = pdfBlob ? {kind:'pdf', name:base+'.pdf', blob:pdfBlob, thumb, scanned:true}
+                          : {kind:'image', name:base+'.jpg', url:thumb, scanned};
+  addFile(st.key, fileObj);
   busy(false);
   go('step');
 }
 function docFileName(key){ return key.toUpperCase(); }
+function cloneCanvas(img){ const c=document.createElement('canvas'); c.width=img.width; c.height=img.height; c.getContext('2d').drawImage(img,0,0); return c; }
+function canvasToPDF(canvas){
+  try{
+    if(!window.jspdf||!window.jspdf.jsPDF) return null;
+    const {jsPDF}=window.jspdf;
+    const W=canvas.width, H=canvas.height;
+    const pdf=new jsPDF({orientation:W>H?'l':'p', unit:'px', format:[W,H], compress:true});
+    pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,W,H);
+    return pdf.output('blob');
+  }catch(e){ console.warn('pdf fail',e); return null; }
+}
+/* realce sem OpenCV (fallback): contraste + brilho do papel */
+function enhanceJS(canvas){
+  const c=document.createElement('canvas'); c.width=canvas.width; c.height=canvas.height;
+  const ctx=c.getContext('2d'); ctx.drawImage(canvas,0,0);
+  const im=ctx.getImageData(0,0,c.width,c.height), d=im.data;
+  const contrast=1.4, bright=-26;
+  for(let i=0;i<d.length;i+=4){
+    for(let j=0;j<3;j++){ let v=(d[i+j]-128)*contrast+128+bright; d[i+j]=v<0?0:v>255?255:v; }
+  }
+  ctx.putImageData(im,0,0);
+  return c;
+}
 
 /* ---------- warpPerspective ---------- */
 function warpToCanvas(img,quad){
@@ -935,8 +974,8 @@ function enhanceCV(img,mode){
   cv.GaussianBlur(bg,bg,new cv.Size(0,0),9);
   const norm=new cv.Mat();
   cv.divide(gray,bg,norm,255.0);
-  // auto-níveis por percentis (aprox. 3 e 90)
-  const {lo,hi}=percentiles(norm,3,92);
+  // auto-níveis por percentis (mais contraste)
+  const {lo,hi}=percentiles(norm,8,90);
   const lev=new cv.Mat();
   const a=255/Math.max(1,(hi-lo));
   norm.convertTo(lev,cv.CV_8U,a,-lo*a);
@@ -946,12 +985,12 @@ function enhanceCV(img,mode){
     // Cor: reforça a tinta usando o canal de luminância nivelado sobre o colorido
     const rgb=new cv.Mat(); cv.cvtColor(src,rgb,cv.COLOR_RGBA2RGB);
     const levC=new cv.Mat(); cv.cvtColor(lev,levC,cv.COLOR_GRAY2RGB);
-    outMat=new cv.Mat(); cv.addWeighted(rgb,0.45,levC,0.55,0,outMat);
+    outMat=new cv.Mat(); cv.addWeighted(rgb,0.32,levC,0.68,0,outMat);
     rgb.delete(); levC.delete(); lev.delete();
   }
-  // máscara de nitidez (unsharp com box blur)
+  // máscara de nitidez (unsharp mais forte)
   const blur=new cv.Mat(); cv.blur(outMat,blur,new cv.Size(3,3));
-  const sharp=new cv.Mat(); cv.addWeighted(outMat,1.5,blur,-0.5,0,sharp);
+  const sharp=new cv.Mat(); cv.addWeighted(outMat,1.85,blur,-0.85,0,sharp);
   const out=document.createElement('canvas'); cv.imshow(out,sharp);
   src.delete();gray.delete();bg.delete();k.delete();norm.delete();outMat.delete();blur.delete();sharp.delete();
   return out;
@@ -1060,13 +1099,11 @@ function renderPhotos(st){
   let html=`<div class="cap-head"><h2 class="big">Fotos do veículo</h2><p>Duas fotos com data, hora e localização (GPS).</p></div><div class="photoslots">`;
   slots.forEach(s=>{
     const p=state.photos[s.k];
-    const pv=p?`<img src="${p.url}" alt="">`:`<div class="ph">📷</div>`;
-    html+=`<div class="pslot ${p?'ok':''}"><div class="pv">${pv}</div>
+    const pv=p?`<img src="${p.url}" alt="">`:`<div class="ph">📷<small>Tocar para abrir a câmera</small></div>`;
+    html+=`<div class="pslot ${p?'ok':''}"><div class="pv" onclick="startGpsCam('${s.k}','${s.l}')">${pv}</div>
       <div class="pl">${s.l}${p?'<span class="st">✓ GPS</span>':''}</div>
-      <div class="pa">
-        <button class="foto" onclick="startGpsCam('${s.k}','${s.l}')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>Foto GPS</button>
-        <button class="up" onclick="uploadPhoto('${s.k}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Enviar</button>
-      </div></div>`;
+      <button class="pupload" onclick="uploadPhoto('${s.k}')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Enviar arquivo</button>
+    </div>`;
   });
   html+=`</div><div class="note">Ao <b>tirar foto</b>, a câmera carimba data/hora e endereço na imagem. No <b>envio</b>, pegamos sua localização atual e carimbamos.</div>`;
   document.getElementById('stepBody').className='content';
@@ -1236,8 +1273,9 @@ function deliverables(){
   return out;
 }
 function docCell(f,cap){
-  const im=f?(f.kind==='image'?`<img src="${f.url}">`:`<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`)
-                :`<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`;
+  const timg = f ? (f.kind==='image'?f.url:f.thumb) : null;
+  const im = f ? (timg?`<img src="${timg}">`:`<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`)
+               : `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`;
   return `<div class="rev-doc"><div class="im">${im}</div><div class="cap">${esc(cap)}</div></div>`;
 }
 function renderReview(){
@@ -1268,13 +1306,13 @@ function renderReview(){
 async function shareWhatsApp(){
   const items=deliverables();
   const files=items.map(i=>new File([i.blob],i.name,{type:i.blob.type||'application/octet-stream'}));
+  // sem 'text' — assim o WhatsApp NÃO descarta os arquivos (o resumo vai como RESUMO.txt)
   if(navigator.canShare && navigator.canShare({files})){
-    try{ await navigator.share({files, title:'Cadastro — '+(state.ident.nome||'Transportes ARI'), text:summaryText()}); }
-    catch(e){ if(e && e.name==='AbortError') return; alert('Não foi possível compartilhar direto. Vou baixar os arquivos para você anexar no WhatsApp.'); downloadAll(); }
-  } else {
-    alert('Seu navegador não compartilha arquivos direto (comum no desktop). Vou baixar os '+items.length+' arquivos para você anexar no WhatsApp.');
-    downloadAll();
+    try{ await navigator.share({files, title:'Cadastro — '+(state.ident.nome||'Transportes ARI')}); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
   }
+  alert('Não foi possível compartilhar os arquivos direto aqui. Vou baixar os '+items.length+' arquivos para você anexar no WhatsApp.');
+  downloadAll();
 }
 function downloadAll(){
   const items=deliverables();
@@ -1283,6 +1321,17 @@ function downloadAll(){
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
   }, i*350));
 }
+
+/* libera a câmera ao esconder/fechar a aba e reabre ao voltar — assim NÃO trava outros apps */
+function releaseAllCameras(){ try{stopStream();}catch(e){} try{stopGps();}catch(e){} }
+function currentScreen(){ const s=document.querySelector('.screen.on'); return s?s.id:''; }
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ releaseAllCameras(); return; }
+  const scr=currentScreen();
+  if(scr==='camera' && state.current) startCamera(state.current);
+  else if(scr==='gpscam' && gpsSlot) startGpsCam(gpsSlot, document.getElementById('gpsTitle').textContent);
+});
+window.addEventListener('pagehide', releaseAllCameras);
 
 /* init */
 renderVehicles();

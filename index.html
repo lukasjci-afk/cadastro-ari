@@ -29,7 +29,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --void:#0E1116;
@@ -390,11 +389,15 @@
   </header>
   <div class="content" id="reviewBody"></div>
   <div class="footbar">
+    <button class="btn primary" style="margin-bottom:10px" onclick="saveToDrive()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="m8 17 4 4 4-4"/><path d="M20 16.5A4.5 4.5 0 0 0 17 8.5h-1.3A7 7 0 1 0 4 14.9"/></svg>
+      Salvar no Drive ARI
+    </button>
     <button class="btn wa" style="margin-bottom:10px" onclick="shareWhatsApp()">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.5-.2-.7.2-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6 0-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.6 2 .8 2.7.9 3.7.8.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3z"/><path d="M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-2.9.8.8-2.8-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
-      Enviar por WhatsApp
+      WhatsApp (1 PDF)
     </button>
-    <button class="btn ghost" onclick="downloadAll()">Baixar todos os arquivos</button>
+    <button class="btn ghost" onclick="downloadAll()">Baixar todos (separados)</button>
   </div>
 </section>
 
@@ -408,6 +411,13 @@
 /* ======================================================================
    MODELO DE VEÍCULOS + REGRAS
    ====================================================================== */
+/* ====== Entrega no Drive (Apps Script) — preencha após publicar o Codigo.gs ======
+   endpoint: a URL /exec da implantação do Apps Script.  token: o mesmo do Codigo.gs. */
+const DRIVE_CONFIG = {
+  endpoint: 'https://script.google.com/macros/s/AKfycbz6foADbkcJjbgW4AFIHdHK9QghwHsvw2lEirOYN1tkS50OF2BSb52GJeMcMZSdNXgJ/exec',
+  token:    'CadasAri#@26'                    // = TOKEN do Codigo.gs
+};
+
 const VEHICLES = [
   {id:'34',        nome:'3/4',             eixos:2, cat:'LEVES',   crlv:'simples',  art:{w:250,cab:18,bodies:[{x:72,w:150}],wheels:[42,190]}},
   {id:'fiorino',   nome:'Fiorino',         eixos:2, cat:'LEVES',   crlv:'simples',  van:true},
@@ -490,7 +500,7 @@ function buildSteps(v){
    ESTADO + NAVEGAÇÃO
    ====================================================================== */
 const state = { vehicle:null, steps:[], files:{}, done:{}, sameAntt:{}, current:null,
-                ident:{}, bank:{tipo:'motorista'}, photos:{}, refs:[{},{},{}] };
+                ident:{}, bank:{tipo:'motorista'}, photos:{}, refs:[{},{},{}], driveUrl:null };
 
 function go(id){
   if(id!=='camera') stopStream();
@@ -519,7 +529,7 @@ function pickVehicle(id){
   const v = VEHICLES.find(x=>x.id===id);
   state.vehicle = v; state.steps = buildSteps(v);
   state.files={}; state.done={}; state.sameAntt={};
-  state.ident={}; state.bank={tipo:'motorista'}; state.photos={}; state.refs=[{},{},{}];
+  state.ident={}; state.bank={tipo:'motorista'}; state.photos={}; state.refs=[{},{},{}]; state.driveUrl=null;
   renderFlow(); go('flow');
 }
 
@@ -1303,7 +1313,6 @@ function renderReview(){
     <div class="rev-card"><h3>Dados bancários</h3>${bankLines}</div>
     <div class="rev-card"><h3>Documentos &amp; fotos</h3><div class="rev-grid">${cells}</div></div>
     <div class="rev-card"><h3>Referências</h3>${refLines}</div>`;
-  prepareShare();
 }
 /* PDF único com tudo (resumo + documentos + fotos) — 1 arquivo = anexa sem falhar no WhatsApp */
 function buildCombinedPDF(){
@@ -1341,31 +1350,60 @@ function buildCombinedPDF(){
   return pdf.output('blob');
 }
 function zipBaseName(){ return `${slug(state.ident.nome)}_${(state.ident.cpf||'').replace(/\D/g,'')}_${mainPlate()}`; }
-/* monta um .zip com os arquivos SEPARADOS (cada documento/foto individual, com nome próprio) */
-async function buildZipFile(){
-  if(!window.JSZip) return null;
-  const zip=new JSZip();
-  deliverables().forEach(it=> zip.file(it.name, it.blob));
-  const blob=await zip.generateAsync({type:'blob'});
-  return new File([blob], zipBaseName()+'_CADASTRO.zip', {type:'application/zip'});
-}
-/* pré-gera o pacote ao abrir a Revisão, para o compartilhamento ser instantâneo (mantém o gesto de toque) */
-let shareReady=null;
-function prepareShare(){ shareReady=null; buildZipFile().then(f=>{ shareReady=f; }).catch(()=>{}); }
 
+/* ---------- WhatsApp ----------
+   Se já salvou no Drive → compartilha o LINK da pasta (o destinatário vê os arquivos SEPARADOS).
+   Senão → manda 1 PDF com tudo (o WhatsApp/Chrome não aceita vários arquivos nem .zip). */
 async function shareWhatsApp(){
-  let file=shareReady;
-  if(!file){ try{ file=await buildZipFile(); }catch(e){} }
-  if(!file){ // sem JSZip → cai para 1 PDF único (ainda funciona)
-    const pdf=buildCombinedPDF(); if(pdf) file=new File([pdf], zipBaseName()+'_CADASTRO.pdf', {type:'application/pdf'});
+  const short='Cadastro — '+(state.ident.nome||'Transportes ARI')+(mainPlate()?' • '+mainPlate():'');
+  if(state.driveUrl){
+    const text=short+'\nDocumentos (pasta no Drive): '+state.driveUrl;
+    if(navigator.share){ try{ await navigator.share({title:'Cadastro ARI', text}); return; }catch(e){ if(e&&e.name==='AbortError') return; } }
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank'); return;
   }
-  const short='Cadastro — '+(state.ident.nome||'Transportes ARI')+(state.ident.placa||state.ident.placa_cavalo?' • '+(state.ident.placa||state.ident.placa_cavalo):'');
-  if(file && navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({files:[file], text:short, title:'Cadastro ARI'}); return; }
-    catch(e){ if(e && e.name==='AbortError') return; }
+  const pdf=buildCombinedPDF();
+  if(pdf){
+    const file=new File([pdf], zipBaseName()+'_CADASTRO.pdf', {type:'application/pdf'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], text:short, title:'Cadastro ARI'}); return; }
+      catch(e){ if(e && e.name==='AbortError') return; }
+    }
   }
-  alert('Não foi possível compartilhar direto aqui. Vou baixar os arquivos separados para você anexar no WhatsApp.');
-  downloadAll();
+  if(confirm('Ainda não salvei no Drive. Para o WhatsApp abrir os arquivos separados, salve no Drive ARI primeiro.\n\nSalvar no Drive agora?')) { saveToDrive(); return; }
+  alert('Vou baixar os arquivos separados para você anexar.'); downloadAll();
+}
+
+/* ---------- Salvar no Drive ARI: cada arquivo SEPARADO numa pasta + e-mail ao responsável ---------- */
+function blobToB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); }); }
+async function saveToDrive(){
+  if(!DRIVE_CONFIG.endpoint){
+    alert('O destino no Drive ainda não foi configurado. Publique o Apps Script (Codigo.gs) e cole a URL /exec no DRIVE_CONFIG.endpoint do app.');
+    return;
+  }
+  busy(true,'Salvando no Drive ARI…');
+  try{
+    const items=deliverables();
+    const files=[];
+    for(const it of items){ files.push({ name:it.name, mime:it.blob.type||'application/octet-stream', b64:await blobToB64(it.blob) }); }
+    const payload=JSON.stringify({
+      token:DRIVE_CONFIG.token, cadastro:zipBaseName(),
+      motorista:state.ident.nome||'', cpf:state.ident.cpf||'', placa:mainPlate(),
+      veiculo:state.vehicle?state.vehicle.nome:'', files
+    });
+    const r=await fetch(DRIVE_CONFIG.endpoint,{ method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:payload });
+    let out=null; try{ out=await r.json(); }catch(_){}
+    busy(false);
+    if(out && out.ok===false){ alert('Não salvou ('+(out.erro||'erro')+'). Vou baixar os arquivos.'); downloadAll(); }
+    else if(r.ok){
+      // só usa link no WhatsApp se a pasta for pública; privada → WhatsApp manda o PDF
+      state.driveUrl = (out && out.publico && out.pasta) ? out.pasta : null;
+      renderReview();
+      alert('Cadastro salvo na pasta ARI no Drive ✓\nO responsável foi avisado por e-mail.'+
+            (state.driveUrl ? '\n\nToque em "WhatsApp" para enviar o link da pasta.'
+                            : '\n\n(Pasta privada — o WhatsApp enviará o PDF com tudo.)'));
+    }
+    else { alert('Não salvou (HTTP '+r.status+'). Vou baixar os arquivos.'); downloadAll(); }
+  }catch(e){ busy(false); alert('Sem conexão — vou baixar os arquivos para reenviar depois.'); downloadAll(); }
 }
 function downloadAll(){
   const items=deliverables();
